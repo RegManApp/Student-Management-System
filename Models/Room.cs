@@ -89,5 +89,11 @@ namespace StudentManagementSystem.Models
                 schedule.Add(slot);
             }
         }
+        // to display class data
+        public override string ToString()
+        {
+            return $"Room ID: {roomId}, Building: {building}, Room Number: {roomNumber}, Capacity: {capacity}, Scheduled Slots: {schedule.Count}";
+        }
+
     }
 }
