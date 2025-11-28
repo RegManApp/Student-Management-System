@@ -5,7 +5,7 @@ namespace CourseRegistrationSystem.DAL.Entities;
 
 public class InstructorProfile
 {
-    [Key] [ForeignKey("User")] public string InstructorId { get; set; } = null!;
+    [Key] [ForeignKey("User")] public int InstructorId { get; set; }
 
     [Required] public string Title { get; set; } = null!;
 

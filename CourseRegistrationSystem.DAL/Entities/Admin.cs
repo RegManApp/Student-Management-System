@@ -1,20 +1,13 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CourseRegistrationSystem.DAL.Entities;
 
-public class Admin : User
+public class AdminProfile
 {
-    [Required] private string Title { get; set; } = string.Empty;
+    [Key] [ForeignKey("User")] public int StaffId { get; set; }
 
-    public void CreateCourse(Course course)
-    {
-    }
+    [Required] public string Title { get; set; } = null!;
 
-    public void UpdateCourse(Course course)
-    {
-    }
-
-    public void DeleteCourse(Course course)
-    {
-    }
+    public BaseUser User { get; set; } = null!;
 }
