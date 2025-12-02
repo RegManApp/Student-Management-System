@@ -1,5 +1,8 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using CourseRegistrationSystem.DAL.DataContext;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.Entities;
 using System;
 using System.Collections.Generic;
@@ -24,6 +27,7 @@ namespace StudentManagementSystem.DAL
       
         public static IServiceCollection AddDataBaseLayer( this IServiceCollection service, IConfigurationManager configuration) 
         {
+            service.AddDbContext<AppDbContext>(options=> { options.UseSqlServer(configuration.GetConnectionString("ConnectionString")); });
             return service;
         }
     }

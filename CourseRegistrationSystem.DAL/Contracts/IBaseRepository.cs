@@ -12,10 +12,10 @@ namespace StudentManagementSystem.DAL.Contracts
         Task<IEnumerable<T>> GetAllAsync();
         Task<T?> GetByIdAsync(int id);
         Task AddAsync(T entity);
-        Task UpdateAsync(T entity);
-        Task DeleteAsync(int id);
+        void Update(T entity);
+        Task<bool> DeleteAsync(int id);
         IQueryable<T> GetAllAsQueryable();
-        IQueryable<T> GetFilteredAndProjected();
+        IQueryable<TDestination> GetFilteredAndProjected<TDestination>(Expression<Func<T, bool>> filter, Expression<Func<T, TDestination>> projection) where TDestination: class;
 
     }
 }

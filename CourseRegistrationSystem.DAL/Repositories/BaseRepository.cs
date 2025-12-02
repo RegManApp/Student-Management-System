@@ -1,15 +1,7 @@
 ﻿using CourseRegistrationSystem.DAL.DataContext;
 using Microsoft.EntityFrameworkCore;
-using StudentManagementSystem.DAL;
 using StudentManagementSystem.DAL.Contracts;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Text;
-using System.Threading.Tasks;
-using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace StudentManagementSystem.DAL.Repositories
 {
@@ -22,34 +14,40 @@ namespace StudentManagementSystem.DAL.Repositories
             this.dbContext = dbContext;
             this.dbset = dbContext.Set<T>();
         }
-        public Task AddAsync(T entity)
+        public async Task AddAsync(T entity)
         {
-            throw new NotImplementedException();
+            await dbset.AddAsync(entity);
         }
 
-        public Task DeleteAsync(int id)
+        public async Task<bool> DeleteAsync(int id)
         {
-            throw new NotImplementedException();
+            var entity = await dbset.FindAsync(id);
+            if (entity != null)
+            {
+                dbset.Remove(entity);
+                return true;
+            }
+            return false; //false if not found to be deleted
         }
 
         public IQueryable<T> GetAllAsQueryable()
         {
-            throw new NotImplementedException();
+            return dbset.AsQueryable();
         }
 
-        public Task<IEnumerable<T>> GetAllAsync()
+        public async Task<IEnumerable<T>> GetAllAsync()
         {
-            throw new NotImplementedException();
+            return await dbset.ToListAsync();
         }
 
-        public Task<T?> GetByIdAsync(int id)
+        public async Task<T?> GetByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return await dbset.FindAsync(id); //will return entity if found, null otherwise
         }
 
-        public Task UpdateAsync(T entity)
+        public void Update(T entity)
         {
-            throw new NotImplementedException();
+            dbset.Update(entity);
         }
         public IQueryable<TDestination> GetFilteredAndProjected<TDestination>(Expression<Func<T, bool>> filter, Expression<Func<T, TDestination>> projection)
         where TDestination : class
@@ -63,7 +61,7 @@ namespace StudentManagementSystem.DAL.Repositories
             return query.Select(projection);
 
         }
-        //public IQueryable<T> GetQueryWithFilter(Expression<Func<T, bool>> filter)
+        //public IQueryable<T> GetQueryWithFilter(Expression<Func<T, bool>> filter) 
         //{
         //    // Start with the full DbSet
         //    IQueryable<T> query = dbset;
