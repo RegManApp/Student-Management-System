@@ -1,4 +1,5 @@
 ﻿using CourseRegistrationSystem.DAL.DataContext;
+using Microsoft.AspNetCore.Identity;
 using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
 using StudentManagementSystem.DAL.Repositories;
@@ -14,20 +15,22 @@ namespace StudentManagementSystem.DAL.DataContext
     internal class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext dbcontext;
+        private readonly UserManager<BaseUser> userManager;
         private Lazy<IBaseRepository<AcademicPlan>> academicPlans { get; set; }
         private Lazy<IBaseRepository<AdminProfile>> adminProfiles { get; set; }
         private Lazy<IBaseRepository<InstructorProfile>> instructorProfiles { get; set; }
         private Lazy<IBaseRepository<StudentProfile>> studentProfiles { get; set; }
         private Lazy<IBaseRepository<Course>> courses { get; set; }
         private Lazy<IBaseRepository<Enrollment>> enrollments { get; set; }
-        public Lazy<IBaseRepository<Room>> rooms { get; set; }
-        public Lazy<IBaseRepository<ScheduleSlot>> scheduleSlots { get; set; }
-        public Lazy<IBaseRepository<Section>> sections { get; set; }
-        public Lazy<IBaseRepository<TimeSlot>> timeSlots { get; set; }
-        public Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
-        public UnitOfWork(AppDbContext context)
+        private Lazy<IBaseRepository<Room>> rooms { get; set; }
+        private Lazy<IBaseRepository<ScheduleSlot>> scheduleSlots { get; set; }
+        private Lazy<IBaseRepository<Section>> sections { get; set; }
+        private Lazy<IBaseRepository<TimeSlot>> timeSlots { get; set; }
+        private Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
+        public UnitOfWork(AppDbContext context, UserManager<BaseUser> userManager)
         {
             dbcontext = context;
+            this.userManager = userManager;
             academicPlans = new Lazy<IBaseRepository<AcademicPlan>>(() => new BaseRepository<AcademicPlan>(dbcontext));
             adminProfiles = new Lazy<IBaseRepository<AdminProfile>>(() => new BaseRepository<AdminProfile>(dbcontext));
             instructorProfiles = new Lazy<IBaseRepository<InstructorProfile>>(() => new BaseRepository<InstructorProfile>(dbcontext));

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.DAL.Entities;
 using StudentManagementSystem.Entities;
 using System;
@@ -9,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace CourseRegistrationSystem.DAL.DataContext
 {
-    internal class AppDbContext : DbContext
+    internal class AppDbContext : IdentityDbContext<BaseUser>
     {
         public DbSet<Course> Courses { get; set; }
         public DbSet<Section> Sections { get; set; }
