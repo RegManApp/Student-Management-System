@@ -31,7 +31,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             throw new NotImplementedException();
         }
 
-        public Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync()
+        public Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync(string? courseName, int? creditHours, int? availableSeats, string? courseCode, int? courseCategoryId)
         {
             throw new NotImplementedException();
         }
