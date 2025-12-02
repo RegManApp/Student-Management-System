@@ -67,10 +67,43 @@ namespace StudentManagementSystem.BusinessLayer.Services
         }
 
 
-        public Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync()
+        public async Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync(
+            string? courseName,
+            int? creditHours,
+            int? availableSeats,
+            string? courseCode,
+            int? courseCategoryId)
         {
-            throw new NotImplementedException();
+            var query = unitOfWork.Courses.GetAllAsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(courseName))
+                query = query.Where(c => c.CourseName.Contains(courseName));
+
+            if (creditHours.HasValue)
+                query = query.Where(c => c.CreditHours == creditHours.Value);
+
+            if (availableSeats.HasValue)
+                query = query.Where(c => c.AvailableSeats == availableSeats.Value);
+
+            if (!string.IsNullOrWhiteSpace(courseCode))
+                query = query.Where(c => c.CourseCode.Contains(courseCode));
+
+            if (courseCategoryId.HasValue)
+                query = query.Where(c => (int)c.CourseCategory == courseCategoryId.Value);
+
+            var result = await query
+                .Select(c => new ViewCourseSummaryDTO
+                {
+                    CourseId = c.CourseId,
+                    CourseName = c.CourseName,
+                    CreditHours = c.CreditHours,
+                    CourseCode = c.CourseCode
+                })
+                .ToListAsync();
+
+            return result;
         }
+
 
         public async Task<ViewCourseDetailsDTO> GetCourseById(int id)
         {
@@ -105,9 +138,35 @@ namespace StudentManagementSystem.BusinessLayer.Services
             return courseDTO;
         }
 
-        public Task<ViewCourseDetailsDTO> UpdateCourse(UpdateCourseDTO courseDTO)
+        public async Task<ViewCourseDetailsDTO> UpdateCourse(UpdateCourseDTO courseDTO)
         {
-            throw new NotImplementedException();
+            if (courseDTO == null)
+                throw new ArgumentNullException(nameof(courseDTO));
+
+            var existingCourse = await unitOfWork.Courses.GetByIdAsync(courseDTO.CourseId);
+
+            if (existingCourse == null)
+                throw new Exception($"Course with ID {courseDTO.CourseId} not found.");
+
+            existingCourse.CreditHours = courseDTO.CreditHours;
+            existingCourse.AvailableSeats = courseDTO.AvailableSeats;
+            existingCourse.CourseCode = courseDTO.CourseCode;
+            existingCourse.CourseCategory = (CourseCategory)courseDTO.CourseCategoryId;
+
+            unitOfWork.Courses.Update(existingCourse);
+            unitOfWork.SaveChanges();
+
+            return new ViewCourseDetailsDTO
+            {
+                CourseId = existingCourse.CourseId,
+                CourseName = existingCourse.CourseName,
+                CreditHours = existingCourse.CreditHours,
+                AvailableSeats = existingCourse.AvailableSeats,
+                CourseCode = existingCourse.CourseCode,
+                CourseCategoryId = (int)existingCourse.CourseCategory,
+                CourseCategoryName = existingCourse.CourseCategory.ToString()
+            };
         }
+
     }
 }
