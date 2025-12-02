@@ -1,7 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace StudentManagementSystem.Models
+namespace StudentManagementSystem.Entities
 {
     public class TimeSlot
     {

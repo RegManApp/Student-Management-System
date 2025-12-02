@@ -1,15 +1,13 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace CourseRegistrationSystem.DAL.Entities;
+namespace StudentManagementSystem.DAL.Entities;
 
-public class InstructorProfile
+public class AdminProfile
 {
-    [Key] [ForeignKey("User")] public int InstructorId { get; set; }
+    [Key] [ForeignKey("User")] public int StaffId { get; set; }
 
     [Required] public string Title { get; set; } = null!;
-
-    private List<Section> Sections { get; set; } = new();
 
     public BaseUser User { get; set; } = null!;
 }

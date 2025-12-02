@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace CourseRegistrationSystem.DAL.Entities;
+namespace StudentManagementSystem.DAL.Entities;
 
 public class StudentProfile
 {

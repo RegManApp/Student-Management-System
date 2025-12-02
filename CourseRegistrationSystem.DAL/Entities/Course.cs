@@ -1,8 +1,7 @@
 using System;
 using System.ComponentModel.DataAnnotations;
-using static System.Collections.Specialized.BitVector32;
 
-namespace StudentManagementSystem.Models
+namespace StudentManagementSystem.Entities
 {
     public class Course
     {

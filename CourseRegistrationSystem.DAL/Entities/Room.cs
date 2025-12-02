@@ -1,9 +1,10 @@
+using StudentManagementSystem.Entities;
 using System;
 
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 
-namespace StudentManagementSystem.Models
+namespace StudentManagementSystem.Entities
 {
     public class Room
     {

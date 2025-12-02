@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace CourseRegistrationSystem.DAL.Entities;
+namespace StudentManagementSystem.DAL.Entities;
 
 public class Transcript
 {

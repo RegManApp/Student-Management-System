@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Identity;
 
-namespace CourseRegistrationSystem.DAL.Entities;
+namespace StudentManagementSystem.DAL.Entities;
 
 public class BaseUser : IdentityUser
 {

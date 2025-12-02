@@ -1,19 +1,12 @@
+using StudentManagementSystem.DAL.Entities;
 using System;
-<<<<<<< HEAD
-=======
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using static System.Collections.Specialized.BitVector32;
 
->>>>>>> 1a41e9657aaf9543f97c831f5efceb99d5c174aa
-namespace StudentManagementSystem.Models
+namespace StudentManagementSystem.Entities
 {
     public class Section
     {
-<<<<<<< HEAD
-
-    }
-=======
         public int SectionId { get; set; }
         [Required]
         public string Semester { get; set; }
@@ -32,5 +25,4 @@ namespace StudentManagementSystem.Models
 
     }
 
->>>>>>> 1a41e9657aaf9543f97c831f5efceb99d5c174aa
 }
