@@ -9,6 +9,7 @@ using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using static Microsoft.AspNetCore.Hosting.Internal.HostingApplication;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace StudentManagementSystem.DAL.Repositories
 {
@@ -50,10 +51,30 @@ namespace StudentManagementSystem.DAL.Repositories
         {
             throw new NotImplementedException();
         }
-        public IQueryable<T> GetFilteredAndProjected()
+        public IQueryable<TDestination> GetFilteredAndProjected<TDestination>(Expression<Func<T, bool>> filter, Expression<Func<T, TDestination>> projection)
+        where TDestination : class
         {
-            throw new NotImplementedException();
-        }
+            var query = GetAllAsQueryable();
+            if (filter != null)
+            {
+                query = query.Where(filter); //here i apply filtering on entire table
+            }
+            //then we project, apply mapping to destination DTO
+            return query.Select(projection);
 
+        }
+        //public IQueryable<T> GetQueryWithFilter(Expression<Func<T, bool>> filter)
+        //{
+        //    // Start with the full DbSet
+        //    IQueryable<T> query = dbset;
+
+        //    // Apply the filtering expression
+        //    if (filter != null)
+        //    {
+        //        query = query.Where(filter);
+        //    }
+
+        //    return query;
+        //}
     }
 }
