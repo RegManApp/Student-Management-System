@@ -36,7 +36,7 @@ namespace StudentManagementSystem.DAL.DataContext
             instructorProfiles = new Lazy<IBaseRepository<InstructorProfile>>(() => new BaseRepository<InstructorProfile>(dbcontext));
             studentProfiles = new Lazy<IBaseRepository<StudentProfile>>(() => new BaseRepository<StudentProfile>(dbcontext));
             courses = new Lazy<IBaseRepository<Course>>(() => new BaseRepository<Course>(dbcontext));
-            rooms = new Lazy<IBaseRepository<Room>>(()=> new BaseRepository<Room>(dbcontext)));
+            rooms = new Lazy<IBaseRepository<Room>>(()=> new BaseRepository<Room>(dbcontext));
             enrollments = new Lazy<IBaseRepository<Enrollment>>(() => new BaseRepository<Enrollment>(dbcontext));
             scheduleSlots = new Lazy<IBaseRepository<ScheduleSlot>>(() => new BaseRepository<ScheduleSlot>(dbcontext));
             sections = new Lazy<IBaseRepository<Section>>(() => new BaseRepository<Section>(dbcontext));
