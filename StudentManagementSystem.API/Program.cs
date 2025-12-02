@@ -1,4 +1,7 @@
 
+using StudentManagementSystem.BusinessLayer;
+using StudentManagementSystem.DAL; 
+
 namespace StudentManagementSystem.API
 {
     public class Program
@@ -9,6 +12,7 @@ namespace StudentManagementSystem.API
 
             // Add services to the container.
             builder.Services.AddDataBaseLayer(builder.Configuration);  
+            builder.Services.AddBusinessServices();
             builder.Services.AddControllers();
             // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
             builder.Services.AddEndpointsApiExplorer();
