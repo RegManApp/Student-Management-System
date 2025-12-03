@@ -8,11 +8,11 @@ namespace YourProject.DAL.Entities
         
         public Status Status {get;set;}
         
-        [ForeignKey('Student')]
-        public Student StudentId{ get; set; }
+        [ForeignKey("Student")]
+        public int StudentId{ get; set; }
 
-        [ForeignKey('Section')]
-        public Section SectionId{ get; set; }
+        [ForeignKey("Section")]
+        public int SectionId{ get; set; }
 
         // Operations
         
@@ -35,3 +35,5 @@ namespace YourProject.DAL.Entities
 
     }
 }
+
+public enum Status{Enrolled, Dropped, Completed};
