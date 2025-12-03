@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagementSystem.BusinessLayer.Contracts;
+using StudentManagementSystem.BusinessLayer.DTOs.CourseDTOs;
 
 namespace StudentManagementSystem.API.Controllers
 {
@@ -35,6 +36,19 @@ namespace StudentManagementSystem.API.Controllers
             {
                 var courses = await courseService.GetAllCoursesAsync(courseName, creditHours, availableSeats, courseCode, courseCategoryId);
                 return Ok(courses);
+            }
+            catch (Exception ex)
+            {
+                return Ok(ex.Message);
+            }
+        }
+        [HttpPost]
+        public async Task<IActionResult> CreateCourse([FromBody] CreateCourseDTO courseDTO)
+        {
+            try
+            {
+                var createdCourse = await courseService.CreateCourse(courseDTO);
+                return Ok(createdCourse);
             }
             catch (Exception ex)
             {
