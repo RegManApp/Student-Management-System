@@ -1,47 +1,17 @@
 
 public class AcademicPlan
 {
-    public string AcademicPlanId ;
-    public string majorname ;
-    public int Creds ;
+    public string AcademicPlanId{get;set;} 
+    public string MajorName{get;set;} 
+    public int Credits{get;set;} 
 
-    private List<Course> courses;
-
-    public void SetAcademicPlanId(string x)
-     {
-        AcademicPlanId = x;
-     }
-
-    public void Setmajorname(string x)
-     {
-        majorname = x;
-     }
-
-    public void SetCreds(int x)
-     {
-        Creds = x;
-     }
-
-    public AcademicPlanId GetPlan()
-     {
-      return AcademicPlanId;
-     }
-
-    public majorname GetMajorName()
-     {
-      return majorname;
-     }
-
-    public Creds GetCreds()
-     {
-      return Creds;
-     }
-
+    public List<Course> courses;
+    
     public AcademicPlan(string x, string y, int z)
     {
         AcademicPlanId = x;
-        majorname = y;
-        Creds = z;
+        MajorName = y;
+        Credits = z;
         courses = new List<ICollection>();
     }
 
@@ -63,4 +33,5 @@ public class AcademicPlan
         return total;
     }
 }
+
 
