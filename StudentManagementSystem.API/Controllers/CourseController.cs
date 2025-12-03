@@ -28,7 +28,20 @@ namespace StudentManagementSystem.API.Controllers
             }
 
         }
-      
+        [HttpGet]
+        public async Task<IActionResult> GetAllCourses([FromQuery] string? courseName, [FromQuery] int? creditHours, [FromQuery] int? availableSeats, [FromQuery] string? courseCode, [FromQuery] int? courseCategoryId)
+        {
+            try
+            {
+                var courses = await courseService.GetAllCoursesAsync(courseName, creditHours, availableSeats, courseCode, courseCategoryId);
+                return Ok(courses);
+            }
+            catch (Exception ex)
+            {
+                return Ok(ex.Message);
+            }
+        }
+
 
     }
 }
