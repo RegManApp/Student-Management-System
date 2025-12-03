@@ -26,10 +26,10 @@ namespace StudentManagementSystem.DAL
             return source.Select(projection);
         }
       
-        public static IServiceCollection AddDataBaseLayer( this IServiceCollection service, IConfigurationManager configuration) 
+        public static IServiceCollection AddDataBaseLayer( this IServiceCollection service, IConfiguration configuration) 
         {
             service.AddScoped<IUnitOfWork, UnitOfWork>();
-            service.AddDbContext<AppDbContext>(options=> { options.UseSqlServer(configuration.GetConnectionString("ConnectionString")); });
+            service.AddDbContext<AppDbContext>(options=> { options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")); });
             return service;
         }
     }

@@ -15,7 +15,7 @@ namespace StudentManagementSystem.DAL.DataContext
     internal class UnitOfWork : IUnitOfWork
     {
         private readonly AppDbContext dbcontext;
-        private readonly UserManager<BaseUser> userManager;
+        //private readonly UserManager<BaseUser> userManager;
         private Lazy<IBaseRepository<AcademicPlan>> academicPlans { get; set; }
         private Lazy<IBaseRepository<AdminProfile>> adminProfiles { get; set; }
         private Lazy<IBaseRepository<InstructorProfile>> instructorProfiles { get; set; }
@@ -27,10 +27,10 @@ namespace StudentManagementSystem.DAL.DataContext
         private Lazy<IBaseRepository<Section>> sections { get; set; }
         private Lazy<IBaseRepository<TimeSlot>> timeSlots { get; set; }
         private Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
-        public UnitOfWork(AppDbContext context, UserManager<BaseUser> userManager)
+        public UnitOfWork(AppDbContext context)
         {
             dbcontext = context;
-            this.userManager = userManager;
+            //this.userManager = userManager;
             academicPlans = new Lazy<IBaseRepository<AcademicPlan>>(() => new BaseRepository<AcademicPlan>(dbcontext));
             adminProfiles = new Lazy<IBaseRepository<AdminProfile>>(() => new BaseRepository<AdminProfile>(dbcontext));
             instructorProfiles = new Lazy<IBaseRepository<InstructorProfile>>(() => new BaseRepository<InstructorProfile>(dbcontext));
@@ -55,9 +55,9 @@ namespace StudentManagementSystem.DAL.DataContext
         public IBaseRepository<StudentProfile> StudentProfiles => studentProfiles.Value;
         public IBaseRepository<AcademicPlan> AcademicPlans => academicPlans.Value;
 
-        public void SaveChanges()
+        public async Task SaveChangesAsync()
         {
-            dbcontext.SaveChanges();
+            await dbcontext.SaveChangesAsync();
         }
     }
 }

@@ -65,13 +65,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             return $"Course with ID {id} deleted successfully.";
         }
 
-
-        public async Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync(
-            string? courseName,
-            int? creditHours,
-            int? availableSeats,
-            string? courseCode,
-            int? courseCategoryId)
+        public Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync(string? courseName, int? creditHours, int? availableSeats, string? courseCode, int? courseCategoryId)
         {
             var query = unitOfWork.Courses.GetAllAsQueryable();
 
