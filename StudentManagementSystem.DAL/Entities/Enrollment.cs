@@ -5,7 +5,7 @@ namespace StudentManagementSystem.Entities
 {
     public class Enrollment
     {
-        
+        public int EnrollmentId { get; set; }
         public Status Status {get;set;}
         
         [ForeignKey("Student")]
