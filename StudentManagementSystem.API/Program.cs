@@ -1,7 +1,6 @@
 
 using StudentManagementSystem.BusinessLayer;
-using StudentManagementSystem.DAL; 
-using CourseRegistrationSystem.DAL; 
+using StudentManagementSystem.DAL;
 
 namespace StudentManagementSystem.API
 {

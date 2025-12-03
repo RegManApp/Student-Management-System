@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace YourProject.DAL.Entities
+namespace StudentManagementSystem.Entities
 {
     public class Enrollment
     {

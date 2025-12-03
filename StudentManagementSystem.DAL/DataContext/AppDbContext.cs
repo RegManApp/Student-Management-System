@@ -2,13 +2,8 @@
 using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.DAL.Entities;
 using StudentManagementSystem.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace CourseRegistrationSystem.DAL.DataContext
+namespace StudentManagementSystem.DAL.DataContext
 {
     internal class AppDbContext : IdentityDbContext<BaseUser>
     {

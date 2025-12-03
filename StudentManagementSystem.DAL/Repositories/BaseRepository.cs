@@ -1,6 +1,6 @@
-﻿using CourseRegistrationSystem.DAL.DataContext;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.DAL.Contracts;
+using StudentManagementSystem.DAL.DataContext;
 using System.Linq.Expressions;
 
 namespace StudentManagementSystem.DAL.Repositories

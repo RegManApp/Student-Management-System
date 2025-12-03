@@ -1,14 +1,7 @@
-﻿using CourseRegistrationSystem.DAL.DataContext;
-using Microsoft.AspNetCore.Identity;
-using StudentManagementSystem.DAL.Contracts;
+﻿using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
 using StudentManagementSystem.DAL.Repositories;
 using StudentManagementSystem.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace StudentManagementSystem.DAL.DataContext
 {
@@ -26,7 +19,7 @@ namespace StudentManagementSystem.DAL.DataContext
         private Lazy<IBaseRepository<ScheduleSlot>> scheduleSlots { get; set; }
         private Lazy<IBaseRepository<Section>> sections { get; set; }
         private Lazy<IBaseRepository<TimeSlot>> timeSlots { get; set; }
-        private Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
+        //private Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
         public UnitOfWork(AppDbContext context)
         {
             dbcontext = context;
@@ -41,14 +34,14 @@ namespace StudentManagementSystem.DAL.DataContext
             scheduleSlots = new Lazy<IBaseRepository<ScheduleSlot>>(() => new BaseRepository<ScheduleSlot>(dbcontext));
             sections = new Lazy<IBaseRepository<Section>>(() => new BaseRepository<Section>(dbcontext));
             timeSlots = new Lazy<IBaseRepository<TimeSlot>>(() => new BaseRepository<TimeSlot>(dbcontext));
-            transcripts = new Lazy<IBaseRepository<Transcript>>(() => new BaseRepository<Transcript>(dbcontext));
+            //transcripts = new Lazy<IBaseRepository<Transcript>>(() => new BaseRepository<Transcript>(dbcontext));
         }
         public IBaseRepository<Course> Courses => courses.Value;
         public IBaseRepository<Room> Rooms => rooms.Value;
         public IBaseRepository<TimeSlot> TimeSlots => timeSlots.Value;
         public IBaseRepository<Section> Sections => sections.Value;
         public IBaseRepository<ScheduleSlot> ScheduleSlots => scheduleSlots.Value;
-        public IBaseRepository<Transcript> Transcripts => transcripts.Value;
+        //public IBaseRepository<Transcript> Transcripts => transcripts.Value;
         public IBaseRepository<Enrollment> Enrollments => enrollments.Value; 
         public IBaseRepository<AdminProfile> AdminProfiles => adminProfiles.Value;
         public IBaseRepository<InstructorProfile> InstructorProfiles => instructorProfiles.Value;
