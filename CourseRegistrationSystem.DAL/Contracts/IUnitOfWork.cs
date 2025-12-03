@@ -11,7 +11,7 @@ namespace StudentManagementSystem.DAL.Contracts
 {
     public interface IUnitOfWork
     {
-       
+
 
         public IBaseRepository<Course> Courses { get; }
         public IBaseRepository<Room> Rooms { get; }
