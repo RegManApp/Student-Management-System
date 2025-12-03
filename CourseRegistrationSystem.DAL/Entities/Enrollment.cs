@@ -8,10 +8,10 @@ namespace YourProject.DAL.Entities
         
         public Status Status {get;set;}
         
-        [Key] [ForeignKey('Student')]
+        [ForeignKey('Student')]
         public Student StudentId{ get; set; }
 
-        [Key] [ForeignKey('Section')]
+        [ForeignKey('Section')]
         public Section SectionId{ get; set; }
 
         // Operations
