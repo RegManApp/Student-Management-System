@@ -186,7 +186,8 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     b.HasKey("StudentId");
 
-                    b.HasIndex("AcademicPlanId");
+                    b.HasIndex("AcademicPlanId")
+                        .IsUnique();
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -320,6 +321,9 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CourseId"));
 
+                    b.Property<string>("AcademicPlanId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("AvailableSeats")
                         .HasColumnType("int");
 
@@ -339,6 +343,8 @@ namespace StudentManagementSystem.DAL.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("CourseId");
+
+                    b.HasIndex("AcademicPlanId");
 
                     b.ToTable("Courses");
                 });
@@ -427,22 +433,22 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("scheduleSlotId"));
 
+                    b.Property<int>("RoomId")
+                        .HasColumnType("int");
+
                     b.Property<int>("SectionId")
                         .HasColumnType("int");
 
-                    b.Property<int>("roomId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("timeSlotId")
+                    b.Property<int>("TimeSlotId")
                         .HasColumnType("int");
 
                     b.HasKey("scheduleSlotId");
 
+                    b.HasIndex("RoomId");
+
                     b.HasIndex("SectionId");
 
-                    b.HasIndex("roomId");
-
-                    b.HasIndex("timeSlotId");
+                    b.HasIndex("TimeSlotId");
 
                     b.ToTable("ScheduleSlots");
                 });
@@ -485,8 +491,9 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("timeSlotId"));
 
-                    b.Property<int>("day")
-                        .HasColumnType("int");
+                    b.Property<string>("day")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<TimeSpan>("endTime")
                         .HasColumnType("time");
@@ -553,9 +560,9 @@ namespace StudentManagementSystem.DAL.Migrations
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.StudentProfile", b =>
                 {
                     b.HasOne("StudentManagementSystem.Entities.AcademicPlan", "AcademicPlan")
-                        .WithMany()
-                        .HasForeignKey("AcademicPlanId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .WithOne("Student")
+                        .HasForeignKey("StudentManagementSystem.DAL.Entities.StudentProfile", "AcademicPlanId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("StudentManagementSystem.Entities.BaseUser", "User")
@@ -580,16 +587,23 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StudentManagementSystem.Entities.Course", b =>
+                {
+                    b.HasOne("StudentManagementSystem.Entities.AcademicPlan", null)
+                        .WithMany("Courses")
+                        .HasForeignKey("AcademicPlanId");
+                });
+
             modelBuilder.Entity("StudentManagementSystem.Entities.Enrollment", b =>
                 {
                     b.HasOne("StudentManagementSystem.Entities.Section", "Section")
-                        .WithMany()
+                        .WithMany("Enrollments")
                         .HasForeignKey("SectionId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("StudentManagementSystem.DAL.Entities.StudentProfile", "Student")
-                        .WithMany()
+                        .WithMany("Enrollments")
                         .HasForeignKey("StudentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -612,22 +626,22 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.Entities.ScheduleSlot", b =>
                 {
+                    b.HasOne("StudentManagementSystem.Entities.Room", "room")
+                        .WithMany("schedule")
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("StudentManagementSystem.Entities.Section", "section")
                         .WithMany("Slots")
                         .HasForeignKey("SectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("StudentManagementSystem.Entities.Room", "room")
-                        .WithMany("schedule")
-                        .HasForeignKey("roomId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("StudentManagementSystem.Entities.TimeSlot", "timeSlot")
                         .WithMany()
-                        .HasForeignKey("timeSlotId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("TimeSlotId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("room");
@@ -656,6 +670,19 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Navigation("Instructor");
                 });
 
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.StudentProfile", b =>
+                {
+                    b.Navigation("Enrollments");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.Entities.AcademicPlan", b =>
+                {
+                    b.Navigation("Courses");
+
+                    b.Navigation("Student")
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("StudentManagementSystem.Entities.BaseUser", b =>
                 {
                     b.Navigation("AdminProfile");
@@ -672,6 +699,8 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.Entities.Section", b =>
                 {
+                    b.Navigation("Enrollments");
+
                     b.Navigation("Slots");
                 });
 #pragma warning restore 612, 618

@@ -25,79 +25,110 @@ namespace StudentManagementSystem.DAL.DataContext
         }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Important: Always call the base implementation for IdentityDbContext
-            // Important: Always call the base implementation for IdentityDbContext
             base.OnModelCreating(modelBuilder);
 
-            // --- 1. One-to-One Relationships (Dedicated Foreign Key Pattern) ---
-            // This resolves the type incompatibility error by using the new 'UserId' (string) 
-            // property as the Foreign Key for all profile entities.
+            // ============================
+            // 1. ONE-TO-ONE RELATIONSHIPS
+            // ============================
 
-            // StudentProfile (Dependent) to BaseUser (Principal)
+            // BaseUser → StudentProfile
             modelBuilder.Entity<StudentProfile>()
-                .HasOne(sp => sp.User)             // StudentProfile has one BaseUser
-                .WithOne(u => u.StudentProfile)    // BaseUser has one StudentProfile
-                .HasForeignKey<StudentProfile>(sp => sp.UserId); // Uses the dedicated string FK
+                .HasOne(sp => sp.User)
+                .WithOne(u => u.StudentProfile)
+                .HasForeignKey<StudentProfile>(sp => sp.UserId);
 
-            // AdminProfile (Dependent) to BaseUser (Principal)
+            // BaseUser → AdminProfile
             modelBuilder.Entity<AdminProfile>()
                 .HasOne(ap => ap.User)
                 .WithOne(u => u.AdminProfile)
                 .HasForeignKey<AdminProfile>(ap => ap.UserId);
 
-            // InstructorProfile (Dependent) to BaseUser (Principal)
+            // BaseUser → InstructorProfile
             modelBuilder.Entity<InstructorProfile>()
                 .HasOne(ip => ip.User)
                 .WithOne(u => u.InstructorProfile)
                 .HasForeignKey<InstructorProfile>(ip => ip.UserId);
 
-            // --- 2. Many-to-One Relationships ---
-
-            // StudentProfile to AcademicPlan
-            // Configures the relationship using AcademicPlanId as the FK.
+            // StudentProfile → AcademicPlan (One-to-One)
+            //modelBuilder.Entity<StudentProfile>()
+            //    .HasOne(sp => sp.AcademicPlan)
+            //    .WithOne(ap => ap.Student)
+            //    .HasForeignKey<StudentProfile>(sp => sp.AcademicPlanId)
+            //    .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<StudentProfile>()
                 .HasOne(sp => sp.AcademicPlan)
-                .WithMany()
-                .HasForeignKey(sp => sp.AcademicPlanId);
+                .WithOne(ap => ap.Student)
+                .HasForeignKey<StudentProfile>(sp => sp.AcademicPlanId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // ScheduleSlot - Section relationship (1:M)
+            // ============================
+            // 2. ONE-TO-MANY RELATIONSHIPS
+            // ============================
+
+            // Section → ScheduleSlot
             modelBuilder.Entity<ScheduleSlot>()
                 .HasOne(ss => ss.section)
-                .WithMany(s => s.Slots);
+                .WithMany(s => s.Slots)
+                .HasForeignKey(ss => ss.SectionId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // ScheduleSlot - Room relationship (1:M)
+            // Room → ScheduleSlot
             modelBuilder.Entity<ScheduleSlot>()
                 .HasOne(ss => ss.room)
-                .WithMany(r => r.schedule);
+                .WithMany(r => r.schedule)
+                .HasForeignKey(ss => ss.RoomId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // ScheduleSlot - TimeSlot relationship (1:M)
+            // TimeSlot → ScheduleSlot
             modelBuilder.Entity<ScheduleSlot>()
                 .HasOne(ss => ss.timeSlot)
-                .WithMany();
+                .WithMany()
+                .HasForeignKey(ss => ss.TimeSlotId)
+                .OnDelete(DeleteBehavior.Restrict);
 
-            // --- 3. Unique Constraints and Indexes ---
+            // Section → Enrollment
+            modelBuilder.Entity<Enrollment>()
+              .HasOne(e => e.Section)
+              .WithMany(s => s.Enrollments)
+              .HasForeignKey(e => e.SectionId)
+              .OnDelete(DeleteBehavior.Restrict);
 
-            // Enrollment Composite Index (Prevents a student from enrolling in the same section twice)
+            // StudentProfile → Enrollment
+            modelBuilder.Entity<Enrollment>()
+             .HasOne(e => e.Student)
+             .WithMany(s => s.Enrollments)
+             .HasForeignKey(e => e.StudentId)
+             .OnDelete(DeleteBehavior.Cascade);
+            // ============================
+            // 3. UNIQUE CONSTRAINTS
+            // ============================
+
+            // Prevent duplicate enrollments (StudentId + SectionId)
             modelBuilder.Entity<Enrollment>()
                 .HasIndex(e => new { e.StudentId, e.SectionId })
                 .IsUnique();
 
-            // --- 4. Enum Conversions (Recommended) ---
+            // ============================
+            // 4. ENUM CONVERSIONS
+            // ============================
 
-            // Convert Enums to strings in the database for better readability and portability.
+            // CourseCategory Enum → string
             modelBuilder.Entity<Course>()
                 .Property(c => c.CourseCategory)
                 .HasConversion<string>();
 
+            // Enrollment Status Enum → string
             modelBuilder.Entity<Enrollment>()
                 .Property(e => e.Status)
                 .HasConversion<string>();
 
+            // TimeSlot DayOfWeek → string
             modelBuilder.Entity<TimeSlot>()
-                .Property(t => t.day);
-            
+                .Property(t => t.day)
+                .HasConversion<string>();
         }
 
+
     }
-    
+
 }

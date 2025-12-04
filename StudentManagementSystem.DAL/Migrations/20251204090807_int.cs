@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace StudentManagementSystem.DAL.Migrations
 {
     /// <inheritdoc />
-    public partial class init : Migration
+    public partial class @int : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -67,23 +67,6 @@ namespace StudentManagementSystem.DAL.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Courses",
-                columns: table => new
-                {
-                    CourseId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    CourseName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CreditHours = table.Column<int>(type: "int", nullable: false),
-                    AvailableSeats = table.Column<int>(type: "int", nullable: false),
-                    CourseCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CourseCategory = table.Column<string>(type: "nvarchar(max)", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Courses", x => x.CourseId);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Rooms",
                 columns: table => new
                 {
@@ -104,13 +87,36 @@ namespace StudentManagementSystem.DAL.Migrations
                 {
                     timeSlotId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    day = table.Column<int>(type: "int", nullable: false),
+                    day = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     startTime = table.Column<TimeSpan>(type: "time", nullable: false),
                     endTime = table.Column<TimeSpan>(type: "time", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_TimeSlots", x => x.timeSlotId);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Courses",
+                columns: table => new
+                {
+                    CourseId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    CourseName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreditHours = table.Column<int>(type: "int", nullable: false),
+                    AvailableSeats = table.Column<int>(type: "int", nullable: false),
+                    CourseCode = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CourseCategory = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    AcademicPlanId = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Courses", x => x.CourseId);
+                    table.ForeignKey(
+                        name: "FK_Courses_AcademicPlans_AcademicPlanId",
+                        column: x => x.AcademicPlanId,
+                        principalTable: "AcademicPlans",
+                        principalColumn: "AcademicPlanId");
                 });
 
             migrationBuilder.CreateTable(
@@ -280,7 +286,7 @@ namespace StudentManagementSystem.DAL.Migrations
                         column: x => x.AcademicPlanId,
                         principalTable: "AcademicPlans",
                         principalColumn: "AcademicPlanId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Students_AspNetUsers_UserId",
                         column: x => x.UserId,
@@ -335,7 +341,7 @@ namespace StudentManagementSystem.DAL.Migrations
                         column: x => x.SectionId,
                         principalTable: "Sections",
                         principalColumn: "SectionId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Enrollments_Students_StudentId",
                         column: x => x.StudentId,
@@ -351,18 +357,18 @@ namespace StudentManagementSystem.DAL.Migrations
                     scheduleSlotId = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     SectionId = table.Column<int>(type: "int", nullable: false),
-                    roomId = table.Column<int>(type: "int", nullable: false),
-                    timeSlotId = table.Column<int>(type: "int", nullable: false)
+                    RoomId = table.Column<int>(type: "int", nullable: false),
+                    TimeSlotId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_ScheduleSlots", x => x.scheduleSlotId);
                     table.ForeignKey(
-                        name: "FK_ScheduleSlots_Rooms_roomId",
-                        column: x => x.roomId,
+                        name: "FK_ScheduleSlots_Rooms_RoomId",
+                        column: x => x.RoomId,
                         principalTable: "Rooms",
                         principalColumn: "roomId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ScheduleSlots_Sections_SectionId",
                         column: x => x.SectionId,
@@ -370,11 +376,11 @@ namespace StudentManagementSystem.DAL.Migrations
                         principalColumn: "SectionId",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_ScheduleSlots_TimeSlots_timeSlotId",
-                        column: x => x.timeSlotId,
+                        name: "FK_ScheduleSlots_TimeSlots_TimeSlotId",
+                        column: x => x.TimeSlotId,
                         principalTable: "TimeSlots",
                         principalColumn: "timeSlotId",
-                        onDelete: ReferentialAction.Cascade);
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -423,6 +429,11 @@ namespace StudentManagementSystem.DAL.Migrations
                 filter: "[NormalizedUserName] IS NOT NULL");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Courses_AcademicPlanId",
+                table: "Courses",
+                column: "AcademicPlanId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Enrollments_SectionId",
                 table: "Enrollments",
                 column: "SectionId");
@@ -440,9 +451,9 @@ namespace StudentManagementSystem.DAL.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ScheduleSlots_roomId",
+                name: "IX_ScheduleSlots_RoomId",
                 table: "ScheduleSlots",
-                column: "roomId");
+                column: "RoomId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ScheduleSlots_SectionId",
@@ -450,9 +461,9 @@ namespace StudentManagementSystem.DAL.Migrations
                 column: "SectionId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ScheduleSlots_timeSlotId",
+                name: "IX_ScheduleSlots_TimeSlotId",
                 table: "ScheduleSlots",
-                column: "timeSlotId");
+                column: "TimeSlotId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Sections_CourseId",
@@ -467,7 +478,8 @@ namespace StudentManagementSystem.DAL.Migrations
             migrationBuilder.CreateIndex(
                 name: "IX_Students_AcademicPlanId",
                 table: "Students",
-                column: "AcademicPlanId");
+                column: "AcademicPlanId",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Students_UserId",
@@ -519,13 +531,13 @@ namespace StudentManagementSystem.DAL.Migrations
                 name: "TimeSlots");
 
             migrationBuilder.DropTable(
-                name: "AcademicPlans");
-
-            migrationBuilder.DropTable(
                 name: "Courses");
 
             migrationBuilder.DropTable(
                 name: "Instructors");
+
+            migrationBuilder.DropTable(
+                name: "AcademicPlans");
 
             migrationBuilder.DropTable(
                 name: "AspNetUsers");
