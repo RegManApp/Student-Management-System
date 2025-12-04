@@ -6,10 +6,10 @@ namespace StudentManagementSystem.Entities
 {
     public class AdminProfile
     {
-        [Key][ForeignKey("User")] public int StaffId { get; set; }
+        [Key] public int StaffId { get; set; }
 
         [Required] public string Title { get; set; } = null!;
-
+        public string UserId { get; set; } = null!; //fk
         public BaseUser User { get; set; } = null!;
     }
 }

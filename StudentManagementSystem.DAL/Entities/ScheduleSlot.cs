@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace StudentManagementSystem.Entities
 {
@@ -7,12 +8,13 @@ namespace StudentManagementSystem.Entities
     {
         [Key]
         [Required] public int scheduleSlotId { get; set; }
-        [Required, ForeignKey("Section")]
-        [Required] public Section section { get; set; } = null!;
-        [Required, ForeignKey("Room")]
-        [Required] public Room room { get; set; } = null!;
-        [Required, ForeignKey("TimeSlot")]
-        [Required] public TimeSlot timeSlot { get; set; } = null!;
+
+        [Required]
+        public Section section { get; set; } = null!;
+        [Required]
+        public Room room { get; set; } = null!;
+        [Required]
+        public TimeSlot timeSlot { get; set; } = null!;
 
         // public ScheduleSlot() { }
 

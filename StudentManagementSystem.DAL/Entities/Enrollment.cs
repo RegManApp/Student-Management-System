@@ -12,12 +12,10 @@ namespace StudentManagementSystem.Entities
         public Status Status { get; set; }
 
         [Required]
-        [ForeignKey("Student")]
         public int StudentId { get; set; }
 
 
         [Required]
-        [ForeignKey("Section")]
         public int SectionId { get; set; }
         //Nav properties
         public StudentProfile? Student { get; set; }

@@ -21,7 +21,10 @@ namespace StudentManagementSystem.DAL
         public static IServiceCollection AddDataBaseLayer( this IServiceCollection service, IConfiguration configuration) 
         {
             service.AddScoped<IUnitOfWork, UnitOfWork>();
-            service.AddDbContext<AppDbContext>(options=> { options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")); });
+            //service.AddDbContext<AppDbContext>(options=> { options.UseSqlServer("Data Source=.;Initial Catalog=StudentManagementDb;Integrated Security=True;Trust Server Certificate=True"); });
+            service.AddDbContext<AppDbContext>(options =>
+    options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+
             return service;
         }
     }
