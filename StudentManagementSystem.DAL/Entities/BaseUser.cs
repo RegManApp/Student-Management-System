@@ -14,6 +14,9 @@ namespace StudentManagementSystem.Entities
         [StringLength(200)]
         public string Address { get; set; } = null!;
         
+        [Required]
+        [StringLength(50)]
+        public string Role { get; set; } = null!;
 
         public StudentProfile? StudentProfile { get; set; }
         public AdminProfile? AdminProfile { get; set; }
