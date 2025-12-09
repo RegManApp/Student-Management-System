@@ -5,7 +5,7 @@ using StudentManagementSystem.BusinessLayer;
 using StudentManagementSystem.BusinessLayer.Services;
 using StudentManagementSystem.DAL;
 using StudentManagementSystem.DAL.DataContext;
-using StudentManagementSystem.Entities;
+using StudentManagementSystem.DAL.Entities;
 using System.Text;
 
 namespace StudentManagementSystem.API

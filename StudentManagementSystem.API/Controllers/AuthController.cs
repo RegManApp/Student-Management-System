@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagementSystem.BusinessLayer.DTOs.AuthDTOs;
 using StudentManagementSystem.BusinessLayer.Services;
-using StudentManagementSystem.Entities;
+using StudentManagementSystem.DAL.Entities;
 
 namespace StudentManagementSystem.API.Controllers
 {
