@@ -222,9 +222,11 @@ namespace StudentManagementSystem.BusinessLayer.Services
             {
                 if (await instructorRepository.GetByIdAsync(sectionDTO.InstructorId??0) is null)
                    throw new KeyNotFoundException($"Instructor with ID {sectionDTO.InstructorId} does not exist or not found.");
-            }
-            section.InstructorId = sectionDTO.InstructorId;
+                section.InstructorId = sectionDTO.InstructorId.Value;
 
+            }
+            else
+                section.InstructorId = null;
             section.Semester = sectionDTO.Semester;
             sectionRepository.Update(section);
             await unitOfWork.SaveChangesAsync();
