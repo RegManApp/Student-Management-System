@@ -31,9 +31,10 @@ namespace StudentManagementSystem.BusinessLayer.Services
             {
                 CourseName = courseDTO.CourseName,
                 CreditHours = courseDTO.CreditHours,
-                AvailableSeats = courseDTO.AvailableSeats,
+                //AvailableSeats = courseDTO.AvailableSeats,
                 CourseCode = courseDTO.CourseCode,
-                CourseCategory = (CourseCategory)courseDTO.CourseCategoryId
+                CourseCategory = (CourseCategory)courseDTO.CourseCategoryId,
+                Description = courseDTO.Description
             };
 
             // 2. Save entity
@@ -45,7 +46,8 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 CourseId = course.CourseId,
                 CourseName = course.CourseName,
                 CreditHours = course.CreditHours,
-                AvailableSeats = course.AvailableSeats,
+                Description= course.Description,
+                //AvailableSeats = course.AvailableSeats,
                 CourseCode = course.CourseCode,
                 CourseCategoryId = (int)course.CourseCategory,
                 CourseCategoryName = course.CourseCategory.ToString()
@@ -65,7 +67,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             return $"Course with ID {id} deleted successfully.";
         }
 
-        public async Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync(string? courseName, int? creditHours, int? availableSeats, string? courseCode, int? courseCategoryId)
+        public async Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync(string? courseName, int? creditHours, string? courseCode, int? courseCategoryId)
         {
             var query = unitOfWork.Courses.GetAllAsQueryable();
 
@@ -74,9 +76,6 @@ namespace StudentManagementSystem.BusinessLayer.Services
 
             if (creditHours.HasValue)
                 query = query.Where(c => c.CreditHours == creditHours.Value);
-
-            if (availableSeats.HasValue)
-                query = query.Where(c => c.AvailableSeats == availableSeats.Value);
 
             if (!string.IsNullOrWhiteSpace(courseCode))
                 query = query.Where(c => c.CourseCode.Contains(courseCode));
@@ -96,6 +95,37 @@ namespace StudentManagementSystem.BusinessLayer.Services
 
             return result;
         }
+        //public async Task<IEnumerable<ViewCourseSummaryDTO>> GetAllCoursesAsync(string? courseName, int? creditHours, int? availableSeats, string? courseCode, int? courseCategoryId)
+        //{
+        //    var query = unitOfWork.Courses.GetAllAsQueryable();
+
+        //    if (!string.IsNullOrWhiteSpace(courseName))
+        //        query = query.Where(c => c.CourseName.Contains(courseName));
+
+        //    if (creditHours.HasValue)
+        //        query = query.Where(c => c.CreditHours == creditHours.Value);
+
+        //    if (availableSeats.HasValue)
+        //        query = query.Where(c => c.AvailableSeats == availableSeats.Value);
+
+        //    if (!string.IsNullOrWhiteSpace(courseCode))
+        //        query = query.Where(c => c.CourseCode.Contains(courseCode));
+
+        //    if (courseCategoryId.HasValue)
+        //        query = query.Where(c => (int)c.CourseCategory == courseCategoryId.Value);
+
+        //    var result = await query
+        //        .Select(c => new ViewCourseSummaryDTO
+        //        {
+        //            CourseId = c.CourseId,
+        //            CourseName = c.CourseName,
+        //            CreditHours = c.CreditHours,
+        //            CourseCode = c.CourseCode
+        //        })
+        //        .ToListAsync();
+
+        //    return result;
+        //}
 
 
         public async Task<ViewCourseDetailsDTO> GetCourseById(int id)
@@ -110,7 +140,8 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 CourseId = c.CourseId,
                 CourseName = c.CourseName,
                 CreditHours = c.CreditHours,
-                AvailableSeats = c.AvailableSeats,
+                //AvailableSeats = c.AvailableSeats,
+                Description= c.Description,
                 CourseCode = c.CourseCode,
                 CourseCategoryId = (int)c.CourseCategory,
                 CourseCategoryName = c.CourseCategory.ToString()
@@ -142,7 +173,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 throw new Exception($"Course with ID {courseDTO.CourseId} not found.");
 
             existingCourse.CreditHours = courseDTO.CreditHours;
-            existingCourse.AvailableSeats = courseDTO.AvailableSeats;
+            //existingCourse.AvailableSeats = courseDTO.AvailableSeats;
             existingCourse.CourseCode = courseDTO.CourseCode;
             existingCourse.CourseCategory = (CourseCategory)courseDTO.CourseCategoryId;
 
@@ -153,7 +184,8 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 CourseId = existingCourse.CourseId,
                 CourseName = existingCourse.CourseName,
                 CreditHours = existingCourse.CreditHours,
-                AvailableSeats = existingCourse.AvailableSeats,
+                //AvailableSeats = existingCourse.AvailableSeats,
+                Description= existingCourse.Description,
                 CourseCode = existingCourse.CourseCode,
                 CourseCategoryId = (int)existingCourse.CourseCategory,
                 CourseCategoryName = existingCourse.CourseCategory.ToString()

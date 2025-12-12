@@ -30,11 +30,11 @@ namespace StudentManagementSystem.API.Controllers
 
         }
         [HttpGet]
-        public async Task<IActionResult> GetAllCoursesAsync([FromQuery] string? courseName, [FromQuery] int? creditHours, [FromQuery] int? availableSeats, [FromQuery] string? courseCode, [FromQuery] int? courseCategoryId)
+        public async Task<IActionResult> GetAllCoursesAsync([FromQuery] string? courseName, [FromQuery] int? creditHours, [FromQuery] string? courseCode, [FromQuery] int? courseCategoryId)
         {
             try
             {
-                var courses = await courseService.GetAllCoursesAsync(courseName, creditHours, availableSeats, courseCode, courseCategoryId);
+                var courses = await courseService.GetAllCoursesAsync(courseName, creditHours, courseCode, courseCategoryId);
                 return Ok(courses);
             }
             catch (Exception ex)
@@ -42,6 +42,19 @@ namespace StudentManagementSystem.API.Controllers
                 return Ok(ex.Message);
             }
         }
+        //[HttpGet]
+        //public async Task<IActionResult> GetAllCoursesAsync([FromQuery] string? courseName, [FromQuery] int? creditHours, [FromQuery] int? availableSeats, [FromQuery] string? courseCode, [FromQuery] int? courseCategoryId)
+        //{
+        //    try
+        //    {
+        //        var courses = await courseService.GetAllCoursesAsync(courseName, creditHours, availableSeats, courseCode, courseCategoryId);
+        //        return Ok(courses);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return Ok(ex.Message);
+        //    }
+        //}
         [HttpPost]
         public async Task<IActionResult> CreateCourseAsync([FromBody] CreateCourseDTO courseDTO)
         {

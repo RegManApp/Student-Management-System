@@ -16,8 +16,8 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.ScheduleSlotDTOs
         public int RoomId { get; set; }
         public string RoomNumber { get; set; } = null!;
         public int TimeSlotId { get; set; }
-        public DayOfWeek day { get; set; }
-        public TimeSpan startTime { get; set; }
-        public TimeSpan endTime { get; set; } //OR summarize all in a timeslot DTO
+        public DayOfWeek Day { get; set; }
+        public TimeSpan StartTime { get; set; }
+        public TimeSpan EndTime { get; set; } //OR summarize all in a timeslot DTO
     }
 }
