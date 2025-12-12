@@ -1,9 +1,13 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.BusinessLayer.Contracts;
+using StudentManagementSystem.BusinessLayer.DTOs.CourseDTOs;
 using StudentManagementSystem.BusinessLayer.DTOs.ScheduleSlotDTOs;
 using StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs;
 using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
+using System.Linq.Expressions;
+using static System.Collections.Specialized.BitVector32;
+using Section = StudentManagementSystem.DAL.Entities.Section;
 
 namespace StudentManagementSystem.BusinessLayer.Services
 {
@@ -41,6 +45,17 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 throw new ArgumentNullException(nameof(sectionDTO.CourseId));
 
             }
+            if (sectionDTO.RoomId == null)
+            {
+                throw new ArgumentNullException(nameof(sectionDTO.RoomId));
+
+            }
+            if (sectionDTO.TimeSlotId == null)
+            {
+                throw new ArgumentNullException(nameof(sectionDTO.TimeSlotId));
+
+            }
+            
             //if the instructor ID is not null, check if they exist in DB
 
             //InstructorProfile? instructor = await instructorRepository.GetAllAsQueryable().AsNoTracking().Where(i=>i.InstructorId==sectionDTO.InstructorId).Include(i => i.User.FullName).SingleOrDefaultAsync();
@@ -55,6 +70,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             {
                 throw new ArgumentNullException(nameof(sectionDTO.CourseId));
             }
+           
 
             //no issues, map to entity
 
@@ -65,9 +81,23 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 CourseId = sectionDTO.CourseId,
                 AvailableSeats =sectionDTO.AvailableSeats
             };
+      
             //add and save
             await sectionRepository.AddAsync(section);
+            await unitOfWork.SaveChangesAsync(); 
+
+            ScheduleSlot scheduleSlot = new ScheduleSlot //default lecture slot, admins can enter details later
+            {
+                RoomId = sectionDTO.RoomId,
+                TimeSlotId = sectionDTO.TimeSlotId,
+                Section = section,
+                SectionId = section.SectionId,
+                SlotType = SlotType.Lecture
+            };
+            await scheduleSlotsRepository.AddAsync(scheduleSlot);
             await unitOfWork.SaveChangesAsync();
+
+            //return mapped dto
             return new ViewSectionDTO
             {
                 SectionId = section.SectionId,
@@ -92,6 +122,87 @@ namespace StudentManagementSystem.BusinessLayer.Services
 
             };
 
+        } //need to modify it to check if the roomid exists as well as timeslot id
+
+        //public async Task<ViewSectionDTO> GetSectionByIdAsync(int id) 
+        //{
+
+        //    //find it first
+        //    var courseId = await sectionRepository.GetAllAsQueryable().AsNoTracking()
+        //        .Where(s => s.SectionId == id)
+        //        .Select(s => s.CourseId)
+        //        .FirstOrDefaultAsync();
+        //    if (courseId == 0) // Assuming CourseId is never 0 and section was not found
+        //    {
+        //        // If courseId is 0, the section likely doesn't exist
+        //        throw new Exception($"Section with ID {id} was not found.");
+        //    }
+        //    var section = await sectionRepository.GetAllAsQueryable().AsNoTracking().Where(s => s.SectionId == id).Select(
+        //         s => new ViewSectionDTO
+        //        {
+        //            SectionId=s.SectionId,
+        //            Semester=s.Semester,
+        //            Year=s.Year,
+        //            InstructorId=s.InstructorId,
+        //            InstructorName=s.Instructor.User.FullName,
+        //            AvailableSeats=s.AvailableSeats,
+        //            ScheduleSlots= s.Slots.Select(slot=> new ViewScheduleSlotDTO {
+        //                            ScheduleSlotId= slot.ScheduleSlotId,
+        //                            SlotType = slot.SlotType,
+        //                            SectionId = slot.SectionId,
+        //                            RoomId = slot.RoomId,
+        //                            RoomNumber = slot.Room.RoomNumber,
+        //                            TimeSlotId = slot.TimeSlotId,
+        //                            Day = slot.TimeSlot.Day,
+        //                            StartTime = slot.TimeSlot.StartTime,
+        //                            EndTime = slot.TimeSlot.EndTime
+        //                }.ToList()
+        //        }
+        //        ).FirstOrDefaultAsync();
+        //    if (section == null)
+        //    {
+        //        throw new Exception($"section with ID {id} was not found. ");
+        //    }
+        //    section.CourseSummary = await courseService.GetCourseSummaryByIdAsync(courseId);
+        //    return section;
+        //}
+        public async Task<ViewSectionDTO> GetSectionByIdAsync(int id) 
+        {
+            var section = await sectionRepository.GetAllAsQueryable().AsNoTracking().Where(s => s.SectionId == id).Select(
+                 s => new ViewSectionDTO
+                {
+                    SectionId=s.SectionId,
+                    Semester=s.Semester,
+                    Year=s.Year,
+                    InstructorId=s.InstructorId,
+                    InstructorName=s.Instructor.User.FullName,
+                    AvailableSeats=s.AvailableSeats,
+                    ScheduleSlots= s.Slots.Select(slot=> new ViewScheduleSlotDTO {
+                                    ScheduleSlotId= slot.ScheduleSlotId,
+                                    SlotType = slot.SlotType,
+                                    SectionId = slot.SectionId,
+                                    RoomId = slot.RoomId,
+                                    RoomNumber = slot.Room.RoomNumber,
+                                    TimeSlotId = slot.TimeSlotId,
+                                    Day = slot.TimeSlot.Day,
+                                    StartTime = slot.TimeSlot.StartTime,
+                                    EndTime = slot.TimeSlot.EndTime
+                        }).ToList(),
+                    CourseSummary = new ViewCourseSummaryDTO 
+                        {
+                            CourseCode= s.Course.CourseCode,
+                            CourseId= s.Course.CourseId,
+                            CourseName= s.Course.CourseName,
+                            CreditHours= s.Course.CreditHours
+
+                    }
+                }
+                ).FirstOrDefaultAsync();
+            if (section == null)
+            {
+                throw new Exception($"section with ID {id} was not found. ");
+            }
+            return section;
         }
         
 

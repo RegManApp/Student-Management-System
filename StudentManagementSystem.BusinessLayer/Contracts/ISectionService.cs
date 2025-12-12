@@ -5,6 +5,7 @@ namespace StudentManagementSystem.BusinessLayer.Contracts
     public interface ISectionService
     {
         Task<ViewSectionDTO> CreateSectionAsync(CreateSectionDTO sectionDTO);
+        Task<ViewSectionDTO> GetSectionByIdAsync(int id);
 
     }
 }

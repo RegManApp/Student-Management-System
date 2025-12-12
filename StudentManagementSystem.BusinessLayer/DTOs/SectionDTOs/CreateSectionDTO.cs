@@ -15,7 +15,7 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs
         [Required]
         public string Semester { get; set; }
         public DateTime Year { get; set; }
-        public int InstructorId { get; set; }
+        public int? InstructorId { get; set; }
         [Required]
         public int CourseId { get; set; }
         [Required]
@@ -23,5 +23,10 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs
         public int AvailableSeats { get; set; }
 
 
+ //lecture slot data
+        public int SectionId { get; set; }
+        public int RoomId { get; set; }
+        public int TimeSlotId { get; set; }
+        public SlotType SlotType { get; set; } = SlotType.Lecture;
     }
 }

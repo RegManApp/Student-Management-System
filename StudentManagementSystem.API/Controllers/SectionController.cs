@@ -15,9 +15,15 @@ namespace StudentManagementSystem.API.Controllers
             this.sectionService = sectionService;
         }
         [HttpPost]
-        public async Task<IActionResult> CreateSectionAsync(CreateSectionDTO sectionDTO) 
+        public async Task<IActionResult> CreateSectionAsync(CreateSectionDTO sectionDTO)
         {
             return Ok(await sectionService.CreateSectionAsync(sectionDTO));
         }
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetSectionByIdAsync(int id)
+        {
+            return Ok(await sectionService.GetSectionByIdAsync(id));
+        }
     }
 }
+

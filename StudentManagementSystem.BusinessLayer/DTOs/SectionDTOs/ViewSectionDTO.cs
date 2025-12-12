@@ -16,8 +16,8 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs
         public int SectionId { get; set; }
         public string Semester { get; set; }
         public DateTime Year { get; set; }
-        public int InstructorId { get; set; }
-        public string InstructorName { get; set; }
+        public int? InstructorId { get; set; }
+        public string? InstructorName { get; set; }
         public int AvailableSeats { get; set; }
 
         //public int CourseId { get; set; }
