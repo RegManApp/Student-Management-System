@@ -73,6 +73,7 @@ namespace StudentManagementSystem.API.Controllers
         [HttpGet("me")]
         public async Task<IActionResult> Me()
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
                 return Unauthorized();
 
