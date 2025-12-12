@@ -26,7 +26,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id),
                 new Claim(JwtRegisteredClaimNames.Email, user.Email ?? ""),
                 new Claim("fullname", user.FullName),
-                new Claim("role", roles.FirstOrDefault() ?? "")
+                new Claim(ClaimTypes.Role, roles.FirstOrDefault() ?? "")
             };
 
             // Add all roles (if multiple)
