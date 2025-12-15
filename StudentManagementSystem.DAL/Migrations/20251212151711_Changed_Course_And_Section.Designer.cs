@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagementSystem.DAL.DataContext;
 
@@ -11,9 +12,11 @@ using StudentManagementSystem.DAL.DataContext;
 namespace StudentManagementSystem.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251212151711_Changed_Course_And_Section")]
+    partial class Changed_Course_And_Section
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -367,35 +370,35 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Room", b =>
                 {
-                    b.Property<int>("RoomId")
+                    b.Property<int>("roomId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoomId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("roomId"));
 
-                    b.Property<string>("Building")
+                    b.Property<string>("building")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("Capacity")
+                    b.Property<int>("capacity")
                         .HasColumnType("int");
 
-                    b.Property<string>("RoomNumber")
+                    b.Property<string>("roomNumber")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasKey("RoomId");
+                    b.HasKey("roomId");
 
                     b.ToTable("Rooms");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.ScheduleSlot", b =>
                 {
-                    b.Property<int>("ScheduleSlotId")
+                    b.Property<int>("scheduleSlotId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScheduleSlotId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("scheduleSlotId"));
 
                     b.Property<int>("RoomId")
                         .HasColumnType("int");
@@ -409,7 +412,7 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Property<int>("TimeSlotId")
                         .HasColumnType("int");
 
-                    b.HasKey("ScheduleSlotId");
+                    b.HasKey("scheduleSlotId");
 
                     b.HasIndex("RoomId");
 
@@ -434,7 +437,7 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Property<int>("CourseId")
                         .HasColumnType("int");
 
-                    b.Property<int?>("InstructorId")
+                    b.Property<int>("InstructorId")
                         .HasColumnType("int");
 
                     b.Property<string>("Semester")
@@ -495,23 +498,23 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.TimeSlot", b =>
                 {
-                    b.Property<int>("TimeSlotId")
+                    b.Property<int>("timeSlotId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TimeSlotId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("timeSlotId"));
 
-                    b.Property<string>("Day")
+                    b.Property<string>("day")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<TimeSpan>("EndTime")
+                    b.Property<TimeSpan>("endTime")
                         .HasColumnType("time");
 
-                    b.Property<TimeSpan>("StartTime")
+                    b.Property<TimeSpan>("startTime")
                         .HasColumnType("time");
 
-                    b.HasKey("TimeSlotId");
+                    b.HasKey("timeSlotId");
 
                     b.ToTable("TimeSlots");
                 });
@@ -617,29 +620,29 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.ScheduleSlot", b =>
                 {
-                    b.HasOne("StudentManagementSystem.DAL.Entities.Room", "Room")
-                        .WithMany("Schedule")
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Room", "room")
+                        .WithMany("schedule")
                         .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("StudentManagementSystem.DAL.Entities.Section", "Section")
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Section", "section")
                         .WithMany("Slots")
                         .HasForeignKey("SectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("StudentManagementSystem.DAL.Entities.TimeSlot", "TimeSlot")
+                    b.HasOne("StudentManagementSystem.DAL.Entities.TimeSlot", "timeSlot")
                         .WithMany()
                         .HasForeignKey("TimeSlotId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("Room");
+                    b.Navigation("room");
 
-                    b.Navigation("Section");
+                    b.Navigation("section");
 
-                    b.Navigation("TimeSlot");
+                    b.Navigation("timeSlot");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Section", b =>
@@ -652,7 +655,9 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     b.HasOne("StudentManagementSystem.DAL.Entities.InstructorProfile", "Instructor")
                         .WithMany()
-                        .HasForeignKey("InstructorId");
+                        .HasForeignKey("InstructorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Course");
 
@@ -697,7 +702,7 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Room", b =>
                 {
-                    b.Navigation("Schedule");
+                    b.Navigation("schedule");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Section", b =>
