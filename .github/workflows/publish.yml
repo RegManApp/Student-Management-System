@@ -16,13 +16,13 @@ jobs:
         run: cd StudentManagementSystem.API && dotnet restore
         
       - name: Build
-        run: dotnet build --configuration Release --no-restore
+        run: cd StudentManagementSystem.API && dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: dotnet publish --configuration Release --output ./publish --runtime win-x86 
+        run: cd StudentManagementSystem.API && dotnet publish --configuration Release --output ./publish --runtime win-x86 
         
       - name: Test with .NET
-        run: dotnet test
+        run: cd StudentManagementSystem.API && dotnet test
 
       - name: Deploy to MonsterASP.NET via WebDeploy
         uses: rasmusbuchholdt/simply-web-deploy@2.1.0
