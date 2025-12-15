@@ -8,5 +8,7 @@ namespace StudentManagementSystem.BusinessLayer.Contracts
 {
     public interface ICartService
     {
+        Task RemoveFromCartAsync(int studentId, int cartItemId);
+        Task AddToCartAsync(int studentId, int scheduleSlotId);
     }
 }
