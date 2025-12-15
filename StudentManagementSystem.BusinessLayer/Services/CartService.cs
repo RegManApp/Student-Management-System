@@ -22,7 +22,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             cartItemRepository = unitOfWork.CartItems;
         }
         //CREATE
-        public async Task AddToCartAsync(int studentId, int scheduleSlotId)
+        public async Task AddToCartAsync(string studentId, int scheduleSlotId)
         {
 
             //check if valid in db
@@ -50,10 +50,9 @@ namespace StudentManagementSystem.BusinessLayer.Services
             };
             await cartItemRepository.AddAsync(cartItem);
             await unitOfWork.SaveChangesAsync();
-            return true;
         }
         //DELETE
-        public async Task<ViewCartDTO> RemoveFromCartAsync(int studentId, int cartItemId)
+        public async Task<ViewCartDTO> RemoveFromCartAsync(string studentId, int cartItemId)
         {
             //check if valid in db
             int cartId = await ValidateStudentAndCart(studentId); //method checks both student and cart existence
@@ -72,7 +71,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             return await ViewCartAsync(studentId);
         }
         //READ (view)
-        public async Task<ViewCartDTO> ViewCartAsync(int studentId)
+        public async Task<ViewCartDTO> ViewCartAsync(string studentId)
         {
             //check if valid in db
             int cartId = await ValidateStudentAndCart(studentId); //method checks both student and cart existence
@@ -95,16 +94,16 @@ namespace StudentManagementSystem.BusinessLayer.Services
             };
             return viewCartDTO;
         }
-        private async Task<int> ValidateStudentAndCart(int studentId) 
+        private async Task<int> ValidateStudentAndCart(string userId) 
         {
-            StudentProfile? studentWithCart = await studentRepository.GetAllAsQueryable().AsNoTracking().Include(s => s.Cart).FirstOrDefaultAsync(s => s.StudentId == studentId);
+            StudentProfile? studentWithCart = await studentRepository.GetAllAsQueryable().AsNoTracking().Include(s => s.Cart).FirstOrDefaultAsync(s => s.UserId == userId);
             if (studentWithCart == null)
             {
-                throw new InvalidOperationException($"Student with ID {studentId} does not exist.");
+                throw new InvalidOperationException($"Student with ID {userId} does not exist.");
             }
             if (studentWithCart.Cart == null)
             {
-                throw new InvalidOperationException($"Cart for student ID {studentId} does not exist.");
+                throw new InvalidOperationException($"Cart for student ID {userId} does not exist.");
             }
             return studentWithCart.CartId;
         }
