@@ -1,7 +1,6 @@
 ﻿using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
 using StudentManagementSystem.DAL.Repositories;
-using StudentManagementSystem.DAL.Entities;
 
 namespace StudentManagementSystem.DAL.DataContext
 {
@@ -40,6 +39,7 @@ namespace StudentManagementSystem.DAL.DataContext
             timeSlots = new Lazy<IBaseRepository<TimeSlot>>(() => new BaseRepository<TimeSlot>(dbcontext));
             //transcripts = new Lazy<IBaseRepository<Transcript>>(() => new BaseRepository<Transcript>(dbcontext));
         }
+
         public IBaseRepository<Course> Courses => courses.Value;
         public IBaseRepository<Cart> Carts => carts.Value;
         public IBaseRepository<CartItem> CartItems => cartItems.Value;

@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.DAL.Entities;
-//Update-Database -StartupProject StudentManagementSystem.API
 
 namespace StudentManagementSystem.DAL.DataContext
 {
@@ -11,10 +10,13 @@ namespace StudentManagementSystem.DAL.DataContext
         public DbSet<Cart> Carts { get; set; }
         public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Section> Sections { get; set; }
-        public DbSet<BaseUser> Users { get; set; }
+
+        // public DbSet<BaseUser> Users { get; set; }
+
         public DbSet<AdminProfile> Admins { get; set; }
         public DbSet<StudentProfile> Students { get; set; }
         public DbSet<InstructorProfile> Instructors { get; set; }
+
         public DbSet<ScheduleSlot> ScheduleSlots { get; set; }
         public DbSet<Enrollment> Enrollments { get; set; }
         public DbSet<TimeSlot> TimeSlots { get; set; }
@@ -22,10 +24,11 @@ namespace StudentManagementSystem.DAL.DataContext
         public DbSet<AcademicPlan> AcademicPlans { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
 
-
-        public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+        public AppDbContext(DbContextOptions<AppDbContext> options)
+            : base(options)
         {
         }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
@@ -34,30 +37,21 @@ namespace StudentManagementSystem.DAL.DataContext
             // 1. ONE-TO-ONE RELATIONSHIPS
             // ============================
 
-            // BaseUser → StudentProfile
             modelBuilder.Entity<StudentProfile>()
                 .HasOne(sp => sp.User)
                 .WithOne(u => u.StudentProfile)
                 .HasForeignKey<StudentProfile>(sp => sp.UserId);
 
-            // BaseUser → AdminProfile
             modelBuilder.Entity<AdminProfile>()
                 .HasOne(ap => ap.User)
                 .WithOne(u => u.AdminProfile)
                 .HasForeignKey<AdminProfile>(ap => ap.UserId);
 
-            // BaseUser → InstructorProfile
             modelBuilder.Entity<InstructorProfile>()
                 .HasOne(ip => ip.User)
                 .WithOne(u => u.InstructorProfile)
                 .HasForeignKey<InstructorProfile>(ip => ip.UserId);
 
-            // StudentProfile → AcademicPlan (One-to-One)
-            //modelBuilder.Entity<StudentProfile>()
-            //    .HasOne(sp => sp.AcademicPlan)
-            //    .WithOne(ap => ap.Student)
-            //    .HasForeignKey<StudentProfile>(sp => sp.AcademicPlanId)
-            //    .OnDelete(DeleteBehavior.Cascade);
             modelBuilder.Entity<StudentProfile>()
                 .HasOne(sp => sp.AcademicPlan)
                 .WithOne(ap => ap.Student)
@@ -89,12 +83,19 @@ namespace StudentManagementSystem.DAL.DataContext
                 .HasForeignKey(ss => ss.TimeSlotId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Instructor → ScheduleSlot  ✅ (Feature 11)
+            modelBuilder.Entity<ScheduleSlot>()
+                .HasOne(ss => ss.Instructor)
+                .WithMany()
+                .HasForeignKey(ss => ss.InstructorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             // Section → Enrollment
             modelBuilder.Entity<Enrollment>()
-              .HasOne(e => e.Section)
-              .WithMany(s => s.Enrollments)
-              .HasForeignKey(e => e.SectionId)
-              .OnDelete(DeleteBehavior.Restrict);
+                .HasOne(e => e.Section)
+                .WithMany(s => s.Enrollments)
+                .HasForeignKey(e => e.SectionId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // StudentProfile → Enrollment
             modelBuilder.Entity<Enrollment>()
@@ -131,7 +132,6 @@ namespace StudentManagementSystem.DAL.DataContext
             // 3. UNIQUE CONSTRAINTS
             // ============================
 
-            // Prevent duplicate enrollments (StudentId + SectionId)
             modelBuilder.Entity<Enrollment>()
                 .HasIndex(e => new { e.StudentId, e.SectionId })
                 .IsUnique();
@@ -145,24 +145,18 @@ namespace StudentManagementSystem.DAL.DataContext
             // 4. ENUM CONVERSIONS
             // ============================
 
-            // CourseCategory Enum → string
             modelBuilder.Entity<Course>()
                 .Property(c => c.CourseCategory)
                 .HasConversion<string>();
 
-            // Enrollment Status Enum → string
             modelBuilder.Entity<Enrollment>()
                 .Property(e => e.Status)
                 .HasConversion<string>();
 
-            // TimeSlot DayOfWeek → string
             modelBuilder.Entity<TimeSlot>()
                 .Property(t => t.Day)
                 .HasConversion<string>();
          
         }
-
-
     }
-
 }

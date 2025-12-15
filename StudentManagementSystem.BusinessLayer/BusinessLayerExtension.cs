@@ -14,6 +14,7 @@ namespace StudentManagementSystem.BusinessLayer
         public static IServiceCollection AddBusinessServices(this IServiceCollection services)
         {
             services.AddScoped<ICourseService, CourseService>();
+            services.AddScoped<IScheduleSlotService, ScheduleSlotService>();
             services.AddScoped<ISectionService, SectionService>();
             services.AddScoped<ICartService, CartService>();
             services.AddScoped<IAuditLogService, AuditLogService>();

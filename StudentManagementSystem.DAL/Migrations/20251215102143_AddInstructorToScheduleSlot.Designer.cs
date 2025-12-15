@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagementSystem.DAL.DataContext;
 
@@ -11,9 +12,11 @@ using StudentManagementSystem.DAL.DataContext;
 namespace StudentManagementSystem.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251215102143_AddInstructorToScheduleSlot")]
+    partial class AddInstructorToScheduleSlot
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -312,49 +315,6 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Cart", b =>
-                {
-                    b.Property<int>("CartId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartId"));
-
-                    b.Property<int>("StudentProfileId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CartId");
-
-                    b.HasIndex("StudentProfileId")
-                        .IsUnique();
-
-                    b.ToTable("Carts");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.CartItem", b =>
-                {
-                    b.Property<int>("CartItemId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartItemId"));
-
-                    b.Property<int>("CartId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("ScheduleSlotId")
-                        .HasColumnType("int");
-
-                    b.HasKey("CartItemId");
-
-                    b.HasIndex("ScheduleSlotId");
-
-                    b.HasIndex("CartId", "ScheduleSlotId")
-                        .IsUnique();
-
-                    b.ToTable("CartItems");
-                });
-
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Course", b =>
                 {
                     b.Property<int>("CourseId")
@@ -553,9 +513,6 @@ namespace StudentManagementSystem.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("CartId")
-                        .HasColumnType("int");
-
                     b.Property<int>("CompletedCredits")
                         .HasColumnType("int");
 
@@ -667,36 +624,6 @@ namespace StudentManagementSystem.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Cart", b =>
-                {
-                    b.HasOne("StudentManagementSystem.DAL.Entities.StudentProfile", "StudentProfile")
-                        .WithOne("Cart")
-                        .HasForeignKey("StudentManagementSystem.DAL.Entities.Cart", "StudentProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("StudentProfile");
-                });
-
-            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.CartItem", b =>
-                {
-                    b.HasOne("StudentManagementSystem.DAL.Entities.Cart", "Cart")
-                        .WithMany("CartItems")
-                        .HasForeignKey("CartId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("StudentManagementSystem.DAL.Entities.ScheduleSlot", "ScheduleSlot")
-                        .WithMany()
-                        .HasForeignKey("ScheduleSlotId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Cart");
-
-                    b.Navigation("ScheduleSlot");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Course", b =>
@@ -824,11 +751,6 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Navigation("StudentProfile");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Cart", b =>
-                {
-                    b.Navigation("CartItems");
-                });
-
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Room", b =>
                 {
                     b.Navigation("ScheduleSlots");
@@ -843,9 +765,6 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.StudentProfile", b =>
                 {
-                    b.Navigation("Cart")
-                        .IsRequired();
-
                     b.Navigation("Enrollments");
                 });
 #pragma warning restore 612, 618
