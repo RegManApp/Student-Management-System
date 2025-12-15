@@ -3,96 +3,199 @@ using StudentManagementSystem.BusinessLayer.Contracts;
 using StudentManagementSystem.BusinessLayer.DTOs.ScheduleSlotDTOs;
 using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Security.Claims;
+using Microsoft.AspNetCore.Http;
 
 namespace StudentManagementSystem.BusinessLayer.Services
 {
-    public class ScheduleSlotService : IScheduleSlotService
+    internal class ScheduleSlotService : IScheduleSlotService
     {
         private readonly IUnitOfWork unitOfWork;
-        private readonly IBaseRepository<ScheduleSlot> scheduleSlotRepository;
-        private readonly IBaseRepository<TimeSlot> timeSlotRepository;
-        private readonly IBaseRepository<Room> roomRepository;
-        private readonly IBaseRepository<Section> sectionRepository;
-        public ScheduleSlotService(IUnitOfWork unitOfWork)
+        private readonly IAuditLogService auditLogService;
+        private readonly IHttpContextAccessor httpContextAccessor;
+
+        public ScheduleSlotService(
+            IUnitOfWork unitOfWork,
+            IAuditLogService auditLogService,
+            IHttpContextAccessor httpContextAccessor)
         {
             this.unitOfWork = unitOfWork;
-            this.scheduleSlotRepository = unitOfWork.ScheduleSlots;
-            this.roomRepository = unitOfWork.Rooms;
-            this.timeSlotRepository = unitOfWork.TimeSlots;
-            this.sectionRepository = unitOfWork.Sections;
+            this.auditLogService = auditLogService;
+            this.httpContextAccessor = httpContextAccessor;
         }
-        public async Task<ViewScheduleSlotDTO> AddScheduleSlotAsync(CreateScheduleSlotDTO scheduleSlot)
+
+        // =========================
+        // Helpers
+        // =========================
+        private (string userId, string email) GetUserInfo()
         {
-            if(scheduleSlot.RoomId==null)
-                throw new ArgumentNullException(nameof(scheduleSlot.RoomId), "RoomId cannot be null");
-            if(scheduleSlot.TimeSlotId==null)
-                throw new ArgumentNullException(nameof(scheduleSlot.RoomId), "TimeSlotId cannot be null");
-            if(scheduleSlot.SectionId==null)
-                throw new ArgumentNullException(nameof(scheduleSlot.RoomId), "SectionId cannot be null");
-            //if theyre not null, check if they exist in db
-            Room? room = await roomRepository.GetFilteredAndProjected(
-                filter: r => r.RoomId == scheduleSlot.RoomId,
-                projection: r => new Room
-                {
-                    RoomId = r.RoomId,
-                    RoomNumber = r.RoomNumber
-                }
-                ).FirstOrDefaultAsync();
-            if (room == null)
-                throw new KeyNotFoundException("Room with given RoomId does not exist");
-            TimeSlot? timeSlot = await timeSlotRepository.GetFilteredAndProjected(
-                filter: t => t.TimeSlotId == scheduleSlot.TimeSlotId,
-                projection: t => new TimeSlot
-                {
-                    TimeSlotId = t.TimeSlotId,
-                    Day = t.Day,
-                    StartTime = t.StartTime,
-                    EndTime = t.EndTime
-                }
-                ).FirstOrDefaultAsync();
-            if (timeSlot == null)
-                throw new KeyNotFoundException("TimeSlot with given TimeSlotId does not exist");
-           
-                //will use this if i wanna get more data from section later like instructor id, name, etc
-                //Section? section = await sectionRepository.GetFilteredAndProjected(
-                //    filter: s => s.SectionId == scheduleSlot.SectionId,
-                //    projection: s => new Section
-                //    {
-                //        SectionId = s.SectionId
-                //    }
-                //    ).FirstOrDefaultAsync();
-            Section? section = await sectionRepository.GetByIdAsync(scheduleSlot.SectionId);
+            var user = httpContextAccessor.HttpContext?.User
+                ?? throw new Exception("User context not found.");
 
-            if (section == null)
-                throw new KeyNotFoundException("Section with given SectionId does not exist");
-            //all good, create schedule slot
+            return (
+                user.FindFirstValue(ClaimTypes.NameIdentifier)
+                    ?? throw new Exception("UserId not found."),
+                user.FindFirstValue(ClaimTypes.Email)
+                    ?? throw new Exception("User email not found.")
+            );
+        }
 
-            ScheduleSlot slot = new ScheduleSlot
+        // =========================
+        // Create ScheduleSlot
+        // =========================
+        public async Task<ViewScheduleSlotDTO> CreateAsync(CreateScheduleSlotDTO dto)
+        {
+            // =========================
+            // Validate existence
+            // =========================
+            var section = await unitOfWork.Sections
+                .GetAllAsQueryable()
+                .Include(s => s.Course)
+                .FirstOrDefaultAsync(s => s.SectionId == dto.SectionId)
+                ?? throw new Exception("Section not found.");
+
+            var room = await unitOfWork.Rooms.GetByIdAsync(dto.RoomId)
+                ?? throw new Exception("Room not found.");
+
+            var timeSlot = await unitOfWork.TimeSlots.GetByIdAsync(dto.TimeSlotId)
+                ?? throw new Exception("TimeSlot not found.");
+
+            var instructor = await unitOfWork.InstructorProfiles.GetByIdAsync(dto.InstructorId)
+                ?? throw new Exception("Instructor not found.");
+
+            // =========================
+            // Conflict Detection
+            // =========================
+            bool conflictExists = await unitOfWork.ScheduleSlots
+                .GetAllAsQueryable()
+                .AnyAsync(ss =>
+                    ss.TimeSlotId == dto.TimeSlotId &&
+                    (
+                        ss.RoomId == dto.RoomId ||
+                        ss.InstructorId == dto.InstructorId ||
+                        ss.SectionId == dto.SectionId
+                    )
+                );
+
+            if (conflictExists)
+                throw new Exception("Schedule conflict detected.");
+
+            // =========================
+            // Create Entity
+            // =========================
+            var scheduleSlot = new ScheduleSlot
             {
-                SectionId = scheduleSlot.SectionId,
-                RoomId = scheduleSlot.RoomId,
-                TimeSlotId = scheduleSlot.TimeSlotId,
-                SlotType = scheduleSlot.SlotType
+                SectionId = dto.SectionId,
+                RoomId = dto.RoomId,
+                TimeSlotId = dto.TimeSlotId,
+                InstructorId = dto.InstructorId,
+                SlotType = dto.SlotType
             };
-            await scheduleSlotRepository.AddAsync(slot);
+
+            await unitOfWork.ScheduleSlots.AddAsync(scheduleSlot);
             await unitOfWork.SaveChangesAsync();
+
+            // =========================
+            // Audit Log
+            // =========================
+            var (userId, email) = GetUserInfo();
+            await auditLogService.LogAsync(
+                userId,
+                email,
+                "CREATE",
+                "ScheduleSlot",
+                scheduleSlot.ScheduleSlotId.ToString()
+            );
+
+            // =========================
+            // Return DTO
+            // =========================
             return new ViewScheduleSlotDTO
             {
-                ScheduleSlotId = slot.ScheduleSlotId,
-                SlotType = slot.SlotType,
-                SectionId = slot.SectionId,
-                RoomId = slot.RoomId,
-                RoomNumber =room.RoomNumber,
-                TimeSlotId = slot.TimeSlotId,
-                Day = timeSlot.Day,
-                StartTime=timeSlot.StartTime,
-                EndTime=timeSlot.EndTime
-            };  
+                ScheduleSlotId = scheduleSlot.ScheduleSlotId,
+
+                SectionId = section.SectionId,
+                SectionName = $"{section.Course.CourseName} - Section {section.SectionId}",
+
+                RoomId = room.RoomId,
+                Room = $"{room.Building} - {room.RoomNumber}",
+
+                TimeSlotId = timeSlot.TimeSlotId,
+                TimeSlot = $"{timeSlot.Day} {timeSlot.StartTime}-{timeSlot.EndTime}",
+
+                InstructorId = instructor.InstructorId,
+                InstructorName = instructor.User.FullName,
+
+                SlotType = scheduleSlot.SlotType.ToString()
+            };
+        }
+
+        // =========================
+        // Queries
+        // =========================
+        public async Task<IEnumerable<ViewScheduleSlotDTO>> GetAllAsync()
+        {
+            return await BuildQuery().ToListAsync();
+        }
+
+        public async Task<IEnumerable<ViewScheduleSlotDTO>> GetBySectionAsync(int sectionId)
+        {
+            return await BuildQuery()
+                .Where(s => s.SectionId == sectionId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ViewScheduleSlotDTO>> GetByInstructorAsync(int instructorId)
+        {
+            return await BuildQuery()
+                .Where(s => s.InstructorId == instructorId)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<ViewScheduleSlotDTO>> GetByRoomAsync(int roomId)
+        {
+            return await BuildQuery()
+                .Where(s => s.RoomId == roomId)
+                .ToListAsync();
+        }
+
+        // =========================
+        // Shared Query Projection
+        // =========================
+        private IQueryable<ViewScheduleSlotDTO> BuildQuery()
+        {
+            return unitOfWork.ScheduleSlots
+                .GetAllAsQueryable()
+                .Include(s => s.Section)
+                    .ThenInclude(sec => sec.Course)
+                .Include(s => s.Room)
+                .Include(s => s.TimeSlot)
+                .Include(s => s.Instructor)
+                    .ThenInclude(i => i.User)
+                .Select(s => new ViewScheduleSlotDTO
+                {
+                    ScheduleSlotId = s.ScheduleSlotId,
+
+                    SectionId = s.SectionId,
+                    SectionName =
+                        s.Section.Course.CourseName +
+                        " - Section " +
+                        s.Section.SectionId,
+
+                    RoomId = s.RoomId,
+                    Room = s.Room.Building + " - " + s.Room.RoomNumber,
+
+                    TimeSlotId = s.TimeSlotId,
+                    TimeSlot =
+                        s.TimeSlot.Day + " " +
+                        s.TimeSlot.StartTime + "-" +
+                        s.TimeSlot.EndTime,
+
+                    InstructorId = s.InstructorId,
+                    InstructorName = s.Instructor.User.FullName,
+
+                    SlotType = s.SlotType.ToString()
+                });
         }
     }
 }

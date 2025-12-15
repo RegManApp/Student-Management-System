@@ -5,306 +5,305 @@ using StudentManagementSystem.BusinessLayer.DTOs.ScheduleSlotDTOs;
 using StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs;
 using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
-using System.Linq.Expressions;
-using static System.Collections.Specialized.BitVector32;
-using Section = StudentManagementSystem.DAL.Entities.Section;
 
 namespace StudentManagementSystem.BusinessLayer.Services
 {
     internal class SectionService : ISectionService
     {
         private readonly IUnitOfWork unitOfWork;
-        private readonly IBaseRepository<Course> courseRepository;
         private readonly IBaseRepository<Section> sectionRepository;
-        private readonly IBaseRepository<ScheduleSlot> scheduleSlotsRepository;
+        private readonly IBaseRepository<Course> courseRepository;
         private readonly IBaseRepository<InstructorProfile> instructorRepository;
         private readonly ICourseService courseService;
+
         public SectionService(IUnitOfWork unitOfWork, ICourseService courseService)
         {
             this.unitOfWork = unitOfWork;
-            this.courseRepository = unitOfWork.Courses;
             this.sectionRepository = unitOfWork.Sections;
-            this.scheduleSlotsRepository = unitOfWork.ScheduleSlots;
+            this.courseRepository = unitOfWork.Courses;
             this.instructorRepository = unitOfWork.InstructorProfiles;
             this.courseService = courseService;
         }
-        public async Task<ViewSectionDTO> CreateSectionAsync(CreateSectionDTO sectionDTO)
+
+        // =========================
+        // Create
+        // =========================
+        public async Task<ViewSectionDTO> CreateSectionAsync(CreateSectionDTO dto)
         {
-            if (sectionDTO == null)
-                throw new ArgumentNullException(nameof(sectionDTO));
-            //check all inputs are not null
+            if (dto == null)
+                throw new ArgumentNullException(nameof(dto));
 
-            //if (sectionDTO.InstructorId == null) 
-            //{
-            //    throw new ArgumentNullException(nameof(sectionDTO.InstructorId));
+            var course = await courseRepository.GetByIdAsync(dto.CourseId)
+                ?? throw new Exception("Course not found");
 
-            //}
-
-            if (sectionDTO.CourseId == null)
+            string? instructorName = null;
+            if (dto.InstructorId.HasValue)
             {
-                throw new ArgumentNullException(nameof(sectionDTO.CourseId));
+                var instructor = await instructorRepository
+                    .GetAllAsQueryable()
+                    .Include(i => i.User)
+                    .FirstOrDefaultAsync(i => i.InstructorId == dto.InstructorId);
 
-            }
-            if (sectionDTO.RoomId == null)
-            {
-                throw new ArgumentNullException(nameof(sectionDTO.RoomId));
+                if (instructor == null)
+                    throw new Exception("Instructor not found");
 
-            }
-            if (sectionDTO.TimeSlotId == null)
-            {
-                throw new ArgumentNullException(nameof(sectionDTO.TimeSlotId));
-
+                instructorName = instructor.User.FullName;
             }
 
-            //if the instructor ID is not null, check if they exist in DB
-            //get instructor name for return dto
-            string? instructor = string.Empty; //here i get the instructor name from the table instead of including the whole entity
-            if (sectionDTO.InstructorId.HasValue) 
+            var section = new Section
             {
-                instructor = await instructorRepository.GetAllAsQueryable().AsNoTracking().Where(i => i.InstructorId == sectionDTO.InstructorId).Select(i => i.User.FullName).SingleOrDefaultAsync();
-                //InstructorProfile? instructor = await instructorRepository.GetAllAsQueryable().AsNoTracking().Where(i => i.InstructorId == sectionDTO.InstructorId).Include(i => i.User).SingleOrDefaultAsync();
-                if (instructor == null) //if not found & not exist in DB
-                {
-                    throw new ArgumentNullException(nameof(sectionDTO.InstructorId));
-                }
-            }
-           
-
-            //if the course ID is not null, check if it exists in DB
-            Course? course = await courseRepository.GetAllAsQueryable().AsNoTracking().Where(c => c.CourseId == sectionDTO.CourseId).SingleOrDefaultAsync();
-            if (course == null) //if not found & not exist in DB
-            {
-                throw new ArgumentNullException(nameof(sectionDTO.CourseId));
-            }
-
-
-            //no issues, map to entity
-
-            Section section = new Section
-            {
-                Semester = sectionDTO.Semester,
-                Year = sectionDTO.Year,
-                //InstructorId= sectionDTO.InstructorId,
-                CourseId = sectionDTO.CourseId,
-                AvailableSeats = sectionDTO.AvailableSeats
+                Semester = dto.Semester,
+                Year = dto.Year,
+                CourseId = dto.CourseId,
+                InstructorId = dto.InstructorId,
+                AvailableSeats = dto.AvailableSeats
             };
 
-            //add and save
             await sectionRepository.AddAsync(section);
             await unitOfWork.SaveChangesAsync();
-            //COMMENTED TEMPORARILY TILL SCHEDULE SLOT IS IMPLEMENTED
 
-            //ScheduleSlot scheduleSlot = new ScheduleSlot //default lecture slot, admins can enter details later
-            //{
-            //    RoomId = sectionDTO.RoomId,
-            //    TimeSlotId = sectionDTO.TimeSlotId,
-            //    Section = section,
-            //    SectionId = section.SectionId,
-            //    SlotType = SlotType.Lecture
-            //};
-            //await scheduleSlotsRepository.AddAsync(scheduleSlot);
-            //await unitOfWork.SaveChangesAsync();
-
-            //return mapped dto
             return new ViewSectionDTO
             {
                 SectionId = section.SectionId,
                 Semester = section.Semester,
                 Year = section.Year,
                 InstructorId = section.InstructorId,
+                InstructorName = instructorName,
                 AvailableSeats = section.AvailableSeats,
-                InstructorName = instructor,
-                //InstructorName = section.Instructor.User.FullName,
                 CourseSummary = await courseService.GetCourseSummaryByIdAsync(section.CourseId),
-                ScheduleSlots = section.Slots?.Select(slot => new ViewScheduleSlotDTO
-                {
-                    ScheduleSlotId = slot.ScheduleSlotId,
-                    SlotType = slot.SlotType,
-                    SectionId = slot.SectionId,
-                    RoomId = slot.RoomId,
-                    RoomNumber = slot.Room.RoomNumber,
-                    TimeSlotId = slot.TimeSlotId,
-                    Day = slot.TimeSlot.Day,
-                    StartTime = slot.TimeSlot.StartTime,
-                    EndTime = slot.TimeSlot.EndTime,
-                }) ?? Enumerable.Empty<ViewScheduleSlotDTO>()
-
+                ScheduleSlots = Enumerable.Empty<ViewScheduleSlotDTO>()
             };
+        }
 
-        } //need to modify it to check if the roomid exists as well as timeslot id
-
-        //public async Task<ViewSectionDTO> GetSectionByIdAsync(int id) 
-        //{
-
-        //    //find it first
-        //    var courseId = await sectionRepository.GetAllAsQueryable().AsNoTracking()
-        //        .Where(s => s.SectionId == id)
-        //        .Select(s => s.CourseId)
-        //        .FirstOrDefaultAsync();
-        //    if (courseId == 0) // Assuming CourseId is never 0 and section was not found
-        //    {
-        //        // If courseId is 0, the section likely doesn't exist
-        //        throw new Exception($"Section with ID {id} was not found.");
-        //    }
-        //    var section = await sectionRepository.GetAllAsQueryable().AsNoTracking().Where(s => s.SectionId == id).Select(
-        //         s => new ViewSectionDTO
-        //        {
-        //            SectionId=s.SectionId,
-        //            Semester=s.Semester,
-        //            Year=s.Year,
-        //            InstructorId=s.InstructorId,
-        //            InstructorName=s.Instructor.User.FullName,
-        //            AvailableSeats=s.AvailableSeats,
-        //            ScheduleSlots= s.Slots.Select(slot=> new ViewScheduleSlotDTO {
-        //                            ScheduleSlotId= slot.ScheduleSlotId,
-        //                            SlotType = slot.SlotType,
-        //                            SectionId = slot.SectionId,
-        //                            RoomId = slot.RoomId,
-        //                            RoomNumber = slot.Room.RoomNumber,
-        //                            TimeSlotId = slot.TimeSlotId,
-        //                            Day = slot.TimeSlot.Day,
-        //                            StartTime = slot.TimeSlot.StartTime,
-        //                            EndTime = slot.TimeSlot.EndTime
-        //                }.ToList()
-        //        }
-        //        ).FirstOrDefaultAsync();
-        //    if (section == null)
-        //    {
-        //        throw new Exception($"section with ID {id} was not found. ");
-        //    }
-        //    section.CourseSummary = await courseService.GetCourseSummaryByIdAsync(courseId);
-        //    return section;
-        //}
+        // =========================
+        // Get By Id
+        // =========================
         public async Task<ViewSectionDTO> GetSectionByIdAsync(int id)
         {
-            var section = await sectionRepository.GetAllAsQueryable().AsNoTracking().Where(s => s.SectionId == id).Select(
-                 s => new ViewSectionDTO
-                 {
-                     SectionId = s.SectionId,
-                     Semester = s.Semester,
-                     Year = s.Year,
-                     InstructorId = s.InstructorId,
-                     InstructorName = s.Instructor.User.FullName,
-                     AvailableSeats = s.AvailableSeats,
-                     ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
-                     {
-                         ScheduleSlotId = slot.ScheduleSlotId,
-                         SlotType = slot.SlotType,
-                         SectionId = slot.SectionId,
-                         RoomId = slot.RoomId,
-                         RoomNumber = slot.Room.RoomNumber,
-                         TimeSlotId = slot.TimeSlotId,
-                         Day = slot.TimeSlot.Day,
-                         StartTime = slot.TimeSlot.StartTime,
-                         EndTime = slot.TimeSlot.EndTime
-                     }).ToList(),
-                     CourseSummary = new ViewCourseSummaryDTO
-                     {
-                         CourseCode = s.Course.CourseCode,
-                         CourseId = s.Course.CourseId,
-                         CourseName = s.Course.CourseName,
-                         CreditHours = s.Course.CreditHours
+            var section = await BuildBaseQuery()
+                .FirstOrDefaultAsync(s => s.SectionId == id);
 
-                     }
-                 }
-                ).FirstOrDefaultAsync();
             if (section == null)
-            {
-                throw new Exception($"section with ID {id} was not found. ");
-            }
+                throw new Exception($"Section with ID {id} not found");
+
             return section;
         }
-        public async Task<ViewSectionDTO> UpdateSectionAsync(UpdateSectionDTO sectionDTO)
+
+        // =========================
+        // Get All
+        // =========================
+        public async Task<IEnumerable<ViewSectionDTO>> GetAllSectionsAsync(
+            string? semester,
+            DateTime? year,
+            int? instructorId,
+            int? courseId,
+            int? seats)
         {
-            if (sectionDTO == null)
-                throw new ArgumentNullException(nameof(sectionDTO));
-            Section? section = await sectionRepository.GetByIdAsync(sectionDTO.SectionId);
-            if (section is null)
-                throw new KeyNotFoundException($"Section with ID {sectionDTO.SectionId} does not exist or not found.");
-            //otherwise, update
-            if (sectionDTO.Year >= DateTime.Now)
-                section.Year = sectionDTO.Year;
+            var query = sectionRepository
+                .GetAllAsQueryable()
+                .Include(s => s.Course)
+                .Include(s => s.Instructor)
+                    .ThenInclude(i => i.User)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.Room)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.TimeSlot)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.Instructor)
+                        .ThenInclude(i => i.User)
+                .AsQueryable();
 
-            if (sectionDTO.AvailableSeats >= 30 && sectionDTO.AvailableSeats <= 60) //i need to count the enrollments in this section and ensure that the admin doesnt redue the number to be less than the current enrollments
-                section.AvailableSeats = sectionDTO.AvailableSeats;
+            if (!string.IsNullOrEmpty(semester))
+                query = query.Where(s => s.Semester == semester);
 
-            if (sectionDTO.InstructorId.HasValue) //if it has a value, check if instructor exists
-            {
-                if (await instructorRepository.GetByIdAsync(sectionDTO.InstructorId ?? 0) is null)
-                    throw new KeyNotFoundException($"Instructor with ID {sectionDTO.InstructorId} does not exist or not found.");
-                section.InstructorId = sectionDTO.InstructorId.Value;
+            if (year.HasValue)
+                query = query.Where(s => s.Year == year.Value);
 
-            }
-            else
-                section.InstructorId = null;
-            section.Semester = sectionDTO.Semester;
+            if (instructorId.HasValue)
+                query = query.Where(s => s.InstructorId == instructorId.Value);
+
+            if (courseId.HasValue)
+                query = query.Where(s => s.CourseId == courseId.Value);
+
+            if (seats.HasValue)
+                query = query.Where(s => s.AvailableSeats == seats.Value);
+
+            return await query
+                .Select(s => new ViewSectionDTO
+                {
+                    SectionId = s.SectionId,
+                    Semester = s.Semester,
+                    Year = s.Year,
+                    InstructorId = s.InstructorId,
+                    InstructorName = s.Instructor != null
+                        ? s.Instructor.User.FullName
+                        : null,
+                    AvailableSeats = s.AvailableSeats,
+
+                    CourseSummary = new ViewCourseSummaryDTO
+                    {
+                        CourseId = s.Course.CourseId,
+                        CourseName = s.Course.CourseName,
+                        CourseCode = s.Course.CourseCode,
+                        CreditHours = s.Course.CreditHours
+                    },
+
+                    ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
+                    {
+                        ScheduleSlotId = slot.ScheduleSlotId,
+                        SectionId = slot.SectionId,
+                        SectionName =
+                            s.Course.CourseName + " - Section " + s.SectionId,
+
+                        RoomId = slot.RoomId,
+                        Room =
+                            slot.Room.Building + " - " + slot.Room.RoomNumber,
+
+                        TimeSlotId = slot.TimeSlotId,
+                        TimeSlot =
+                            slot.TimeSlot.Day + " " +
+                            slot.TimeSlot.StartTime + "-" +
+                            slot.TimeSlot.EndTime,
+
+                        InstructorId = slot.InstructorId,
+                        InstructorName = slot.Instructor.User.FullName,
+                        SlotType = slot.SlotType.ToString()
+                    }).ToList()
+                })
+                .ToListAsync();
+        }
+
+        // =========================
+        // Update
+        // =========================
+        public async Task<ViewSectionDTO> UpdateSectionAsync(UpdateSectionDTO dto)
+        {
+            var section = await sectionRepository.GetByIdAsync(dto.SectionId)
+                ?? throw new Exception("Section not found");
+
+            section.Semester = dto.Semester;
+            section.Year = dto.Year;
+            section.AvailableSeats = dto.AvailableSeats;
+            section.InstructorId = dto.InstructorId;
+
             sectionRepository.Update(section);
             await unitOfWork.SaveChangesAsync();
-            return await GetSectionByIdAsync(sectionDTO.SectionId);
+
+            return await GetSectionByIdAsync(section.SectionId);
         }
-        public async Task<bool> DeleteSectionAsync(int id) //should be cascade delete and delete all related schedule slots as well
+
+        // =========================
+        // Delete
+        // =========================
+        public async Task<bool> DeleteSectionAsync(int id)
         {
             var deleted = await sectionRepository.DeleteAsync(id);
             if (!deleted)
-                throw new KeyNotFoundException($"Section with ID {id} does not exist or not found.");
+                throw new Exception("Section not found");
+
             await unitOfWork.SaveChangesAsync();
             return true;
-
-
         }
-        public async Task<IEnumerable<ViewSectionDTO>> GetAllSectionsAsync(string? semester, DateTime? year, int? instructorId, int? courseId, int? seats) 
+
+        // =========================
+        // Shared Query
+        // =========================
+        private IQueryable<ViewSectionDTO> BuildBaseQuery()
         {
-            var query = sectionRepository.GetAllAsQueryable().AsNoTracking();
-            if (!string.IsNullOrEmpty(semester))
-            {
-                query = query.Where(s => s.Semester == semester);
-            }
-            if (year.HasValue)
-            {
-                query = query.Where(s => s.Year == year.Value);
-            }
-            if (instructorId.HasValue)
-            {
-                query = query.Where(s => s.InstructorId == instructorId.Value);
-            }
-            if (courseId.HasValue)
-            {
-                query = query.Where(s => s.CourseId == courseId.Value);
-            }
-            if (seats.HasValue && seats>=0 && seats<=60)
-            {
-                query = query.Where(s => s.AvailableSeats == seats.Value);
-            }
-            var result = await query.Select(s => new ViewSectionDTO
+            return sectionRepository
+                .GetAllAsQueryable()
+                .Include(s => s.Course)
+                .Include(s => s.Instructor)
+                    .ThenInclude(i => i.User)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.Room)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.TimeSlot)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.Instructor)
+                        .ThenInclude(i => i.User)
+                .Select(s => new ViewSectionDTO
+                {
+                    SectionId = s.SectionId,
+                    Semester = s.Semester,
+                    Year = s.Year,
+                    InstructorId = s.InstructorId,
+                    InstructorName = s.Instructor != null
+                        ? s.Instructor.User.FullName
+                        : null,
+                    AvailableSeats = s.AvailableSeats,
+
+                    CourseSummary = new ViewCourseSummaryDTO
+                    {
+                        CourseId = s.Course.CourseId,
+                        CourseName = s.Course.CourseName,
+                        CourseCode = s.Course.CourseCode,
+                        CreditHours = s.Course.CreditHours
+                    },
+
+                    ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
+                    {
+                        ScheduleSlotId = slot.ScheduleSlotId,
+                        SectionId = slot.SectionId,
+                        SectionName =
+                            s.Course.CourseName + " - Section " + s.SectionId,
+
+                        RoomId = slot.RoomId,
+                        Room =
+                            slot.Room.Building + " - " + slot.Room.RoomNumber,
+
+                        TimeSlotId = slot.TimeSlotId,
+                        TimeSlot =
+                            slot.TimeSlot.Day + " " +
+                            slot.TimeSlot.StartTime + "-" +
+                            slot.TimeSlot.EndTime,
+
+                        InstructorId = slot.InstructorId,
+                        InstructorName = slot.Instructor.User.FullName,
+                        SlotType = slot.SlotType.ToString()
+                    }).ToList()
+                });
+        }
+
+
+        // =========================
+        // Mapper
+        // =========================
+        private static ViewSectionDTO MapToViewDTO(Section s)
+        {
+            return new ViewSectionDTO
             {
                 SectionId = s.SectionId,
                 Semester = s.Semester,
                 Year = s.Year,
                 InstructorId = s.InstructorId,
-                InstructorName = s.Instructor.User.FullName,
+                InstructorName = s.Instructor != null ? s.Instructor.User.FullName : null,
                 AvailableSeats = s.AvailableSeats,
+
                 CourseSummary = new ViewCourseSummaryDTO
                 {
-                    CourseCode = s.Course.CourseCode,
                     CourseId = s.Course.CourseId,
                     CourseName = s.Course.CourseName,
+                    CourseCode = s.Course.CourseCode,
                     CreditHours = s.Course.CreditHours
                 },
+
                 ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
                 {
                     ScheduleSlotId = slot.ScheduleSlotId,
-                    SlotType = slot.SlotType,
                     SectionId = slot.SectionId,
+                    SectionName = s.Course.CourseName + " - Section " + s.SectionId,
                     RoomId = slot.RoomId,
-                    RoomNumber = slot.Room.RoomNumber,
+                    Room = slot.Room.Building + " - " + slot.Room.RoomNumber,
                     TimeSlotId = slot.TimeSlotId,
-                    Day = slot.TimeSlot.Day,
-                    StartTime = slot.TimeSlot.StartTime,
-                    EndTime = slot.TimeSlot.EndTime
+                    TimeSlot = slot.TimeSlot.Day + " " +
+                               slot.TimeSlot.StartTime + "-" +
+                               slot.TimeSlot.EndTime,
+                    InstructorId = slot.InstructorId,
+                    InstructorName = slot.Instructor.User.FullName,
+                    SlotType = slot.SlotType.ToString()
                 }).ToList()
-            }).ToListAsync();
-            return result;
+            };
         }
-
     }
 }

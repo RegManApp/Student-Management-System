@@ -1,23 +1,21 @@
-﻿using StudentManagementSystem.DAL.Entities;
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace StudentManagementSystem.BusinessLayer.DTOs.ScheduleSlotDTOs
+﻿namespace StudentManagementSystem.BusinessLayer.DTOs.ScheduleSlotDTOs
 {
     public class ViewScheduleSlotDTO
     {
         public int ScheduleSlotId { get; set; }
-        public SlotType SlotType { get; set; }
+
         public int SectionId { get; set; }
+        public string SectionName { get; set; } = string.Empty;
+
         public int RoomId { get; set; }
-        public string RoomNumber { get; set; } = null!;
+        public string Room { get; set; } = string.Empty;
+
         public int TimeSlotId { get; set; }
-        public DayOfWeek Day { get; set; }
-        public TimeSpan StartTime { get; set; }
-        public TimeSpan EndTime { get; set; } //OR summarize all in a timeslot DTO
+        public string TimeSlot { get; set; } = string.Empty;
+
+        public int InstructorId { get; set; }
+        public string InstructorName { get; set; } = string.Empty;
+
+        public string SlotType { get; set; } = string.Empty;
     }
 }
