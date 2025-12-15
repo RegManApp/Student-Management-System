@@ -1,17 +1,11 @@
 using System.ComponentModel.DataAnnotations;
+using StudentManagementSystem.DAL.Entities;
 
-namespace StudentManagementSystem.DAL.Entities
+namespace StudentManagementSystem.BusinessLayer.DTOs.RoomDTOs
 {
-    public enum RoomType
+    public class UpdateRoomDTO
     {
-        LectureHall,
-        Lab,
-        Tutorial
-    }
-
-    public class Room
-    {
-        [Key]
+        [Required]
         public int RoomId { get; set; }
 
         [Required]
@@ -22,13 +16,10 @@ namespace StudentManagementSystem.DAL.Entities
         [MaxLength(20)]
         public string RoomNumber { get; set; } = null!;
 
-        [Required]
+        [Range(1, int.MaxValue)]
         public int Capacity { get; set; }
 
         [Required]
         public RoomType Type { get; set; }
-
-        // Navigation (used later in Scheduling)
-        public ICollection<ScheduleSlot> ScheduleSlots { get; set; } = new List<ScheduleSlot>();
     }
 }

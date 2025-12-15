@@ -18,6 +18,8 @@ namespace StudentManagementSystem.DAL.DataContext
         public DbSet<TimeSlot> TimeSlots { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<AcademicPlan> AcademicPlans { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
@@ -74,7 +76,7 @@ namespace StudentManagementSystem.DAL.DataContext
             // Room → ScheduleSlot
             modelBuilder.Entity<ScheduleSlot>()
                 .HasOne(ss => ss.Room)
-                .WithMany(r => r.Schedule)
+                .WithMany(r => r.ScheduleSlots)
                 .HasForeignKey(ss => ss.RoomId)
                 .OnDelete(DeleteBehavior.Restrict);
 
