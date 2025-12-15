@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using StudentManagementSystem.API.Common;
 using StudentManagementSystem.BusinessLayer.Contracts;
 using StudentManagementSystem.BusinessLayer.DTOs.CourseDTOs;
 
@@ -19,7 +20,11 @@ namespace StudentManagementSystem.API.Controllers
         public async Task<IActionResult> GetCourseByIdAsync(int id)
         {
             var course = await courseService.GetCourseByIdAsync(id);
-            return Ok(course);
+
+            return Ok(
+                ApiResponse<ViewCourseDetailsDTO>
+                    .SuccessResponse(course)
+            );
         }
 
         [HttpGet]
@@ -36,7 +41,10 @@ namespace StudentManagementSystem.API.Controllers
                 courseCategoryId
             );
 
-            return Ok(courses);
+            return Ok(
+                ApiResponse<IEnumerable<ViewCourseSummaryDTO>>
+                    .SuccessResponse(courses)
+            );
         }
 
         [HttpPost]
@@ -44,14 +52,11 @@ namespace StudentManagementSystem.API.Controllers
             [FromBody] CreateCourseDTO courseDTO)
         {
             var createdCourse = await courseService.CreateCourseAsync(courseDTO);
-            return Ok(createdCourse);
-        }
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteCourseAsync(int id)
-        {
-            var result = await courseService.DeleteCourseAsync(id);
-            return Ok(result);
+            return Ok(
+                ApiResponse<ViewCourseDetailsDTO>
+                    .SuccessResponse(createdCourse, "Course created successfully")
+            );
         }
 
         [HttpPut]
@@ -59,7 +64,22 @@ namespace StudentManagementSystem.API.Controllers
             [FromBody] UpdateCourseDTO courseDTO)
         {
             var updatedCourse = await courseService.UpdateCourseAsync(courseDTO);
-            return Ok(updatedCourse);
+
+            return Ok(
+                ApiResponse<ViewCourseDetailsDTO>
+                    .SuccessResponse(updatedCourse, "Course updated successfully")
+            );
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCourseAsync(int id)
+        {
+            await courseService.DeleteCourseAsync(id);
+
+            return Ok(
+                ApiResponse<string>
+                    .SuccessResponse("Course deleted successfully")
+            );
         }
     }
 }

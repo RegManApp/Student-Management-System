@@ -30,12 +30,11 @@ namespace StudentManagementSystem.API.Middleware
                 context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
                 context.Response.ContentType = "application/json";
 
-                var response = new ErrorResponse
-                {
-                    StatusCode = context.Response.StatusCode,
-                    Message = "Something went wrong",
-                    Details = ex.Message
-                };
+                var response = ApiResponse<string>.FailureResponse(
+                    message: "Something went wrong",
+                    statusCode: context.Response.StatusCode,
+                    errors: ex.Message
+                );
 
                 await context.Response.WriteAsync(
                     JsonSerializer.Serialize(response)
