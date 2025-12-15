@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagementSystem.DAL.DataContext;
 
@@ -11,9 +12,11 @@ using StudentManagementSystem.DAL.DataContext;
 namespace StudentManagementSystem.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251215111601_cartItem")]
+    partial class cartItem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -480,9 +483,6 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScheduleSlotId"));
 
-                    b.Property<int>("InstructorId")
-                        .HasColumnType("int");
-
                     b.Property<int>("RoomId")
                         .HasColumnType("int");
 
@@ -496,8 +496,6 @@ namespace StudentManagementSystem.DAL.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("ScheduleSlotId");
-
-                    b.HasIndex("InstructorId");
 
                     b.HasIndex("RoomId");
 
@@ -738,12 +736,6 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.ScheduleSlot", b =>
                 {
-                    b.HasOne("StudentManagementSystem.DAL.Entities.InstructorProfile", "Instructor")
-                        .WithMany()
-                        .HasForeignKey("InstructorId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("StudentManagementSystem.DAL.Entities.Room", "Room")
                         .WithMany("ScheduleSlots")
                         .HasForeignKey("RoomId")
@@ -761,8 +753,6 @@ namespace StudentManagementSystem.DAL.Migrations
                         .HasForeignKey("TimeSlotId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.Navigation("Instructor");
 
                     b.Navigation("Room");
 

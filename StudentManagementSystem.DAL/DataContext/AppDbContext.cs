@@ -7,6 +7,8 @@ namespace StudentManagementSystem.DAL.DataContext
     public class AppDbContext : IdentityDbContext<BaseUser>
     {
         public DbSet<Course> Courses { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
         public DbSet<Section> Sections { get; set; }
 
         // public DbSet<BaseUser> Users { get; set; }
@@ -97,10 +99,34 @@ namespace StudentManagementSystem.DAL.DataContext
 
             // StudentProfile → Enrollment
             modelBuilder.Entity<Enrollment>()
-                .HasOne(e => e.Student)
-                .WithMany(s => s.Enrollments)
-                .HasForeignKey(e => e.StudentId)
+             .HasOne(e => e.Student)
+             .WithMany(s => s.Enrollments)
+             .HasForeignKey(e => e.StudentId)
+             .OnDelete(DeleteBehavior.Cascade);
+             modelBuilder.Entity<Cart>()
+              .HasOne(c => c.StudentProfile)
+              .WithOne(sp => sp.Cart)
+              .HasForeignKey<Cart>(c => c.StudentProfileId)
+              .OnDelete(DeleteBehavior.Cascade);
+            // ============================
+            // Cart → CartItem (ONE-TO-MANY)
+            // ============================
+
+            modelBuilder.Entity<Cart>()
+                .HasMany(c => c.CartItems)
+                .WithOne(ci => ci.Cart)
+                .HasForeignKey(ci => ci.CartId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            // ============================
+            // CartItem → ScheduleSlot (MANY-TO-ONE)
+            // ============================
+
+            modelBuilder.Entity<CartItem>()
+                .HasOne(ci => ci.ScheduleSlot)
+                .WithMany()
+                .HasForeignKey(ci => ci.ScheduleSlotId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             // ============================
             // 3. UNIQUE CONSTRAINTS
@@ -109,6 +135,11 @@ namespace StudentManagementSystem.DAL.DataContext
             modelBuilder.Entity<Enrollment>()
                 .HasIndex(e => new { e.StudentId, e.SectionId })
                 .IsUnique();
+            // Prevent same ScheduleSlot from being added twice to same Cart
+            modelBuilder.Entity<CartItem>()
+                .HasIndex(ci => new { ci.CartId, ci.ScheduleSlotId })
+                .IsUnique();
+
 
             // ============================
             // 4. ENUM CONVERSIONS
@@ -125,6 +156,7 @@ namespace StudentManagementSystem.DAL.DataContext
             modelBuilder.Entity<TimeSlot>()
                 .Property(t => t.Day)
                 .HasConversion<string>();
+         
         }
     }
 }

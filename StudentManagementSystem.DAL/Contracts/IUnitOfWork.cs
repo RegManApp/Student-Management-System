@@ -16,6 +16,9 @@ namespace StudentManagementSystem.DAL.Contracts
         IBaseRepository<StudentProfile> StudentProfiles { get; }
         IBaseRepository<AcademicPlan> AcademicPlans { get; }
 
+        public IBaseRepository<Cart> Carts { get; }
+        public IBaseRepository<CartItem> CartItems { get; }
+        
         Task SaveChangesAsync();
     }
 }
