@@ -18,6 +18,8 @@ namespace StudentManagementSystem.DAL.DataContext
         public DbSet<TimeSlot> TimeSlots { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<AcademicPlan> AcademicPlans { get; set; }
+        public DbSet<AuditLog> AuditLogs { get; set; }
+
 
         public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
         {
