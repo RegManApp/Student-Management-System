@@ -32,4 +32,3 @@ jobs:
           server-username: ${{ secrets.SERVER_USERNAME }}
           server-password: ${{ secrets.SERVER_PASSWORD }}
           source-path: 'StudentManagementSystem.API/publish/'
-          target-path: '/wwwroot/'
