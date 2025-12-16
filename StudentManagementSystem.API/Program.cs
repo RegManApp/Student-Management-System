@@ -123,11 +123,11 @@ namespace StudentManagementSystem.API
             }
 
             // Swagger only in Development
-            if (app.Environment.IsDevelopment())
-            {
+            // if (app.Environment.IsDevelopment())
+            // {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            }
+            // }
 
             app.UseHttpsRedirection();
 
