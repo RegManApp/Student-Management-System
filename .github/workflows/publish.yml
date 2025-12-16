@@ -21,7 +21,11 @@ jobs:
         run: cd StudentManagementSystem.API && dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: cd StudentManagementSystem.API && dotnet publish --configuration Release --output ./publish --runtime win-x86
+        run: cd StudentManagementSystem.API && dotnet publish --configuration Release --output ./publish --runtime win-x86 --self-contained false
+
+      - name: List published files
+        run: Get-ChildItem -Recurse "StudentManagementSystem.API/publish/" | Select-Object FullName
+        shell: pwsh
 
       - name: Update appsettings with connection string
         run: |
