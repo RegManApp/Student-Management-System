@@ -21,6 +21,8 @@ namespace StudentManagementSystem.BusinessLayer
             services.AddScoped<IRoomService, RoomService>();
             services.AddScoped<ITimeSlotService, TimeSlotService>();
             services.AddScoped<IInstructorService, InstructorService>();
+            services.AddScoped<IEnrollmentService, EnrollmentService>();
+
 
 
             return services;

@@ -9,15 +9,17 @@ using System.Security.Claims;
 
 namespace StudentManagementSystem.API.Controllers
 {
-    [Authorize(Roles ="Student")]
+    [Authorize(Roles = "Student")]
     [Route("api/[controller]")]
     [ApiController]
     public class CartController : ControllerBase
     {
         private readonly ICartService cartService;
-        public CartController(ICartService cartService)
+        private readonly IEnrollmentService enrollmentService;
+        public CartController(ICartService cartService, IEnrollmentService enrollmentService)
         {
             this.cartService = cartService;
+            this.enrollmentService = enrollmentService;
         }
         private string GetStudentID()
         {
@@ -39,9 +41,9 @@ namespace StudentManagementSystem.API.Controllers
         [HttpDelete("{cartItemId}")]
         public async Task<IActionResult> RemoveFromCartAsync(int cartItemId)
         {
-            string userId = GetStudentID();            
+            string userId = GetStudentID();
             ViewCartDTO response = await cartService.RemoveFromCartAsync(userId, cartItemId);
-            return Ok(ApiResponse<ViewCartDTO>.SuccessResponse(response));                       
+            return Ok(ApiResponse<ViewCartDTO>.SuccessResponse(response));
         }
         [HttpGet]
         public async Task<IActionResult> ViewCartAsync()
@@ -50,5 +52,18 @@ namespace StudentManagementSystem.API.Controllers
             ViewCartDTO response = await cartService.ViewCartAsync(userId);
             return Ok(ApiResponse<ViewCartDTO>.SuccessResponse(response));
         }
+
+        [HttpPost("enroll")]
+        public async Task<IActionResult> EnrollFromCart()
+        {
+            string userId = GetStudentID();
+
+            await enrollmentService.EnrollFromCartAsync(userId);
+
+            return Ok(ApiResponse<string>.SuccessResponse(
+                "Enrollment completed successfully"
+            ));
+        }
+
     }
 }

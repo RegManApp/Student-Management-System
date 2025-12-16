@@ -7,6 +7,8 @@ using StudentManagementSystem.BusinessLayer.DTOs.Auth;
 using StudentManagementSystem.DAL.Entities;
 using System.Security.Claims;
 using StudentManagementSystem.BusinessLayer.DTOs.CartDTOs;
+using StudentManagementSystem.BusinessLayer.DTOs.EnrollmentDTOs;
+
 
 
 namespace StudentManagementSystem.API.Controllers
@@ -19,19 +21,22 @@ namespace StudentManagementSystem.API.Controllers
         private readonly UserManager<BaseUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IAuditLogService auditLogService;
-
         private readonly ICartService cartService;
+        private readonly IEnrollmentService enrollmentService;
+
 
 
         public AdminController(
             UserManager<BaseUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IAuditLogService auditLogService, ICartService cartService)
+            IAuditLogService auditLogService, ICartService cartService, IEnrollmentService enrollmentService)
         {
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.auditLogService = auditLogService;
             this.cartService = cartService;
+            this.enrollmentService = enrollmentService;
+
 
         }
 
@@ -107,11 +112,20 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         [HttpPost("students/{studentId}/force-enroll")]
-        public async Task<IActionResult> ForceEnroll(string studentId)
+        public async Task<IActionResult> ForceEnroll(
+            string studentId,
+            [FromBody] ForceEnrollDTO dto)
         {
-            // after adding enrollment logiv
-            throw new NotImplementedException("Force enrollment will be implemented in Step 4");
+            if (dto.SectionId <= 0)
+                return BadRequest("Invalid section id");
+
+            await enrollmentService.ForceEnrollAsync(studentId, dto.SectionId);
+
+            return Ok(ApiResponse<string>.SuccessResponse(
+                "Student enrolled successfully (forced)"
+            ));
         }
+
 
 
     }
