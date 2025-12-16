@@ -4,6 +4,8 @@ on: [push]
 jobs:
   build_and_deploy:
     runs-on: windows-latest
+    env:
+      ConnectionStrings__DefaultConnection: ${{ secrets.CONNECTION_STRING }}
     steps:
       - uses: actions/checkout@v4
 
@@ -11,16 +13,23 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0
-          
+
       - name: Install dependencies
         run: cd StudentManagementSystem.API && dotnet restore
-        
+
       - name: Build
         run: cd StudentManagementSystem.API && dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: cd StudentManagementSystem.API && dotnet publish --configuration Release --output ./publish --runtime win-x86 
-        
+        run: cd StudentManagementSystem.API && dotnet publish --configuration Release --output ./publish --runtime win-x86
+
+      - name: Update appsettings with connection string
+        run: |
+          $appSettings = Get-Content "StudentManagementSystem.API/publish/appsettings.json" | ConvertFrom-Json
+          $appSettings.ConnectionStrings.DefaultConnection = "${{ secrets.CONNECTION_STRING }}"
+          $appSettings | ConvertTo-Json -Depth 10 | Set-Content "StudentManagementSystem.API/publish/appsettings.json"
+        shell: pwsh
+
       - name: Test with .NET
         run: cd StudentManagementSystem.API && dotnet test
 
