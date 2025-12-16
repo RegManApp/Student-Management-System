@@ -22,6 +22,7 @@ namespace StudentManagementSystem.DAL.Entities
         public Section? Section { get; set; }
 
         public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
+        public decimal? GPA { get; set; } = 0;
 
 
         // Operations

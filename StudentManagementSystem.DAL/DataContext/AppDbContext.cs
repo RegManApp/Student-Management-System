@@ -141,7 +141,10 @@ namespace StudentManagementSystem.DAL.DataContext
                 .HasIndex(ci => new { ci.CartId, ci.ScheduleSlotId })
                 .IsUnique();
 
-
+            //enrollment -> Grade precision
+            modelBuilder.Entity<Enrollment>()
+               .Property(e => e.GPA)
+               .HasPrecision(3, 2);
             // ============================
             // 4. ENUM CONVERSIONS
             // ============================

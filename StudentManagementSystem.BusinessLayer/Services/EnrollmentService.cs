@@ -86,7 +86,9 @@ internal class EnrollmentService : IEnrollmentService
         {
             StudentId = student.StudentId,
             SectionId = sectionId,
-            EnrolledAt = DateTime.UtcNow
+            EnrolledAt = DateTime.UtcNow,
+            Status = Status.Enrolled,
+            GPA= null
         };
 
         section.AvailableSeats--;
