@@ -8,6 +8,7 @@ namespace StudentManagementSystem.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // أي request لازم يكون عامل Login
     public class RoomController : ControllerBase
     {
         private readonly IRoomService roomService;
@@ -18,8 +19,10 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
-        // GET (Public / Authenticated)
+        // GET ALL
+        // Admin + Instructor + Student
         // =========================
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -27,6 +30,11 @@ namespace StudentManagementSystem.API.Controllers
             return Ok(ApiResponse<IEnumerable<ViewRoomDTO>>.SuccessResponse(rooms));
         }
 
+        // =========================
+        // GET BY ID
+        // Admin + Instructor + Student
+        // =========================
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id)
         {
@@ -35,7 +43,8 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
-        // CREATE (Admin only)
+        // CREATE
+        // Admin only
         // =========================
         [Authorize(Roles = "Admin")]
         [HttpPost]
@@ -46,7 +55,8 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
-        // UPDATE (Admin only)
+        // UPDATE
+        // Admin only
         // =========================
         [Authorize(Roles = "Admin")]
         [HttpPut]
@@ -57,7 +67,8 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
-        // DELETE (Admin only)
+        // DELETE
+        // Admin only
         // =========================
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]

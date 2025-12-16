@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using StudentManagementSystem.API.Common;
 using StudentManagementSystem.BusinessLayer.Contracts;
 using StudentManagementSystem.BusinessLayer.DTOs.CourseDTOs;
@@ -7,6 +8,7 @@ namespace StudentManagementSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // أي request لازم يكون authenticated
     public class CourseController : ControllerBase
     {
         private readonly ICourseService courseService;
@@ -16,6 +18,11 @@ namespace StudentManagementSystem.API.Controllers
             this.courseService = courseService;
         }
 
+        // =========================
+        // Get Course Details By Id
+        // Admin + Instructor
+        // =========================
+        [Authorize(Roles = "Admin,Instructor")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCourseByIdAsync(int id)
         {
@@ -27,6 +34,11 @@ namespace StudentManagementSystem.API.Controllers
             );
         }
 
+        // =========================
+        // Get All Courses (Summary)
+        // Admin + Instructor + Student
+        // =========================
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet]
         public async Task<IActionResult> GetAllCoursesAsync(
             [FromQuery] string? courseName,
@@ -47,6 +59,11 @@ namespace StudentManagementSystem.API.Controllers
             );
         }
 
+        // =========================
+        // Create Course
+        // Admin only
+        // =========================
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateCourseAsync(
             [FromBody] CreateCourseDTO courseDTO)
@@ -59,6 +76,11 @@ namespace StudentManagementSystem.API.Controllers
             );
         }
 
+        // =========================
+        // Update Course
+        // Admin only
+        // =========================
+        [Authorize(Roles = "Admin")]
         [HttpPut]
         public async Task<IActionResult> UpdateCourseAsync(
             [FromBody] UpdateCourseDTO courseDTO)
@@ -71,6 +93,11 @@ namespace StudentManagementSystem.API.Controllers
             );
         }
 
+        // =========================
+        // Delete Course
+        // Admin only
+        // =========================
+        [Authorize(Roles = "Admin")]
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCourseAsync(int id)
         {

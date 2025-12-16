@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using StudentManagementSystem.BusinessLayer.Contracts;
 using StudentManagementSystem.BusinessLayer.DTOs.ScheduleSlotDTOs;
 
@@ -6,6 +7,7 @@ namespace StudentManagementSystem.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [Authorize] // أي request لازم يكون authenticated
     public class ScheduleSlotController : ControllerBase
     {
         private readonly IScheduleSlotService scheduleSlotService;
@@ -17,7 +19,9 @@ namespace StudentManagementSystem.API.Controllers
 
         // =========================
         // Create Schedule Slot
+        // Admin only
         // =========================
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateScheduleSlotDTO dto)
         {
@@ -27,7 +31,9 @@ namespace StudentManagementSystem.API.Controllers
 
         // =========================
         // Get All Schedule Slots
+        // Admin + Instructor + Student
         // =========================
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -37,7 +43,9 @@ namespace StudentManagementSystem.API.Controllers
 
         // =========================
         // Get By Section
+        // Admin + Instructor + Student
         // =========================
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet("section/{sectionId:int}")]
         public async Task<IActionResult> GetBySection(int sectionId)
         {
@@ -47,7 +55,9 @@ namespace StudentManagementSystem.API.Controllers
 
         // =========================
         // Get By Instructor
+        // Admin + Instructor
         // =========================
+        [Authorize(Roles = "Admin,Instructor")]
         [HttpGet("instructor/{instructorId:int}")]
         public async Task<IActionResult> GetByInstructor(int instructorId)
         {
@@ -57,7 +67,9 @@ namespace StudentManagementSystem.API.Controllers
 
         // =========================
         // Get By Room
+        // Admin + Instructor + Student
         // =========================
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet("room/{roomId:int}")]
         public async Task<IActionResult> GetByRoom(int roomId)
         {

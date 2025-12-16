@@ -8,6 +8,7 @@ namespace StudentManagementSystem.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize] // أي request لازم يكون عامل Login
     public class TimeSlotController : ControllerBase
     {
         private readonly ITimeSlotService timeSlotService;
@@ -18,8 +19,10 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
-        // GET (Public / Authenticated)
+        // GET ALL
+        // Admin + Instructor + Student
         // =========================
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet]
         public async Task<IActionResult> GetAll()
         {
@@ -28,7 +31,8 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
-        // CREATE (Admin only)
+        // CREATE
+        // Admin only
         // =========================
         [Authorize(Roles = "Admin")]
         [HttpPost]
@@ -39,7 +43,8 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
-        // DELETE (Admin only)
+        // DELETE
+        // Admin only
         // =========================
         [Authorize(Roles = "Admin")]
         [HttpDelete("{id:int}")]

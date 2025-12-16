@@ -6,6 +6,8 @@ using StudentManagementSystem.BusinessLayer.Contracts;
 using StudentManagementSystem.BusinessLayer.DTOs.Auth;
 using StudentManagementSystem.DAL.Entities;
 using System.Security.Claims;
+using StudentManagementSystem.BusinessLayer.DTOs.CartDTOs;
+
 
 namespace StudentManagementSystem.API.Controllers
 {
@@ -18,14 +20,19 @@ namespace StudentManagementSystem.API.Controllers
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IAuditLogService auditLogService;
 
+        private readonly ICartService cartService;
+
+
         public AdminController(
             UserManager<BaseUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IAuditLogService auditLogService)
+            IAuditLogService auditLogService, ICartService cartService)
         {
             this.userManager = userManager;
             this.roleManager = roleManager;
             this.auditLogService = auditLogService;
+            this.cartService = cartService;
+
         }
 
         // =========================
@@ -90,5 +97,22 @@ namespace StudentManagementSystem.API.Controllers
                 "User created successfully"
             ));
         }
+
+        [HttpGet("students/{studentId}/cart")]
+        public async Task<IActionResult> ViewStudentCart(string studentId)
+        {
+            var cart = await cartService.ViewCartAsync(studentId);
+
+            return Ok(ApiResponse<ViewCartDTO>.SuccessResponse(cart));
+        }
+
+        [HttpPost("students/{studentId}/force-enroll")]
+        public async Task<IActionResult> ForceEnroll(string studentId)
+        {
+            // after adding enrollment logiv
+            throw new NotImplementedException("Force enrollment will be implemented in Step 4");
+        }
+
+
     }
 }
