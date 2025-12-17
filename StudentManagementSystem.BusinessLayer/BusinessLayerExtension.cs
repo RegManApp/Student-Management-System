@@ -22,6 +22,8 @@ namespace StudentManagementSystem.BusinessLayer
             services.AddScoped<ITimeSlotService, TimeSlotService>();
             services.AddScoped<IInstructorService, InstructorService>();
             services.AddScoped<IEnrollmentService, EnrollmentService>();
+            services.AddScoped<ITranscriptService, TranscriptService>();
+            services.AddScoped<IAcademicPlanService, AcademicPlanService>();
 
 
 
