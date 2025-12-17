@@ -31,8 +31,7 @@ namespace StudentManagementSystem.API
                 "https://regman.app",
                 "https://www.regman.app",
                 "https://regman.pages.dev",
-                "http://localhost:5173",
-                "http://localhost:8000"
+                "http://localhost:5173"
             };
             builder.Services.AddCors(options =>
             {
@@ -200,7 +199,7 @@ namespace StudentManagementSystem.API
             // ==================
             // Middleware Pipeline
             // ==================
-            if (app.Environment.IsDevelopment())
+            // if (app.Environment.IsDevelopment())
             {
                 app.UseSwagger();
                 app.UseSwaggerUI();
