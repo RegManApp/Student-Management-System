@@ -26,6 +26,7 @@ namespace StudentManagementSystem.API
             {
                 "https://regman.app",
                 "https://www.regman.app",
+                "https://api.regman.app",
                 "https://regman.pages.dev",
                 "http://localhost:5173"
             };
