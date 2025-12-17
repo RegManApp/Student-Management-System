@@ -9,6 +9,8 @@ namespace StudentManagementSystem.DAL.DataContext
         private readonly AppDbContext dbcontext;
         //private readonly UserManager<BaseUser> userManager;
         private Lazy<IBaseRepository<AcademicPlan>> academicPlans { get; set; }
+        private Lazy<IBaseRepository<AcademicPlanCourse>> academicPlanCourses { get; set; }
+        private Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
         private Lazy<IBaseRepository<CartItem>> cartItems { get; set; }
         private Lazy<IBaseRepository<Cart>> carts { get; set; }
         private Lazy<IBaseRepository<AdminProfile>> adminProfiles { get; set; }
@@ -20,7 +22,6 @@ namespace StudentManagementSystem.DAL.DataContext
         private Lazy<IBaseRepository<ScheduleSlot>> scheduleSlots { get; set; }
         private Lazy<IBaseRepository<Section>> sections { get; set; }
         private Lazy<IBaseRepository<TimeSlot>> timeSlots { get; set; }
-        //private Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
         private Lazy<IBaseRepository<RefreshToken>> refreshTokens;
 
         public UnitOfWork(AppDbContext context)
@@ -28,6 +29,8 @@ namespace StudentManagementSystem.DAL.DataContext
             dbcontext = context;
             //this.userManager = userManager;
             academicPlans = new Lazy<IBaseRepository<AcademicPlan>>(() => new BaseRepository<AcademicPlan>(dbcontext));
+            academicPlanCourses = new Lazy<IBaseRepository<AcademicPlanCourse>>(() => new BaseRepository<AcademicPlanCourse>(dbcontext));
+            transcripts = new Lazy<IBaseRepository<Transcript>>(() => new BaseRepository<Transcript>(dbcontext));
             cartItems = new Lazy<IBaseRepository<CartItem>>(() => new BaseRepository<CartItem>(dbcontext));
             carts = new Lazy<IBaseRepository<Cart>>(() => new BaseRepository<Cart>(dbcontext));
             adminProfiles = new Lazy<IBaseRepository<AdminProfile>>(() => new BaseRepository<AdminProfile>(dbcontext));
@@ -39,7 +42,6 @@ namespace StudentManagementSystem.DAL.DataContext
             scheduleSlots = new Lazy<IBaseRepository<ScheduleSlot>>(() => new BaseRepository<ScheduleSlot>(dbcontext));
             sections = new Lazy<IBaseRepository<Section>>(() => new BaseRepository<Section>(dbcontext));
             timeSlots = new Lazy<IBaseRepository<TimeSlot>>(() => new BaseRepository<TimeSlot>(dbcontext));
-            //transcripts = new Lazy<IBaseRepository<Transcript>>(() => new BaseRepository<Transcript>(dbcontext));
             refreshTokens = new Lazy<IBaseRepository<RefreshToken>>(
     () => new BaseRepository<RefreshToken>(dbcontext)
 );
@@ -53,12 +55,13 @@ namespace StudentManagementSystem.DAL.DataContext
         public IBaseRepository<TimeSlot> TimeSlots => timeSlots.Value;
         public IBaseRepository<Section> Sections => sections.Value;
         public IBaseRepository<ScheduleSlot> ScheduleSlots => scheduleSlots.Value;
-        //public IBaseRepository<Transcript> Transcripts => transcripts.Value;
+        public IBaseRepository<Transcript> Transcripts => transcripts.Value;
         public IBaseRepository<Enrollment> Enrollments => enrollments.Value;
         public IBaseRepository<AdminProfile> AdminProfiles => adminProfiles.Value;
         public IBaseRepository<InstructorProfile> InstructorProfiles => instructorProfiles.Value;
         public IBaseRepository<StudentProfile> StudentProfiles => studentProfiles.Value;
         public IBaseRepository<AcademicPlan> AcademicPlans => academicPlans.Value;
+        public IBaseRepository<AcademicPlanCourse> AcademicPlanCourses => academicPlanCourses.Value;
         public IBaseRepository<RefreshToken> RefreshTokens => refreshTokens.Value;
 
 

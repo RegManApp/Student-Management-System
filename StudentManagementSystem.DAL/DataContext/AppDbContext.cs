@@ -22,6 +22,8 @@ namespace StudentManagementSystem.DAL.DataContext
         public DbSet<TimeSlot> TimeSlots { get; set; }
         public DbSet<Room> Rooms { get; set; }
         public DbSet<AcademicPlan> AcademicPlans { get; set; }
+        public DbSet<AcademicPlanCourse> AcademicPlanCourses { get; set; }
+        public DbSet<Transcript> Transcripts { get; set; }
         public DbSet<AuditLog> AuditLogs { get; set; }
         public DbSet<RefreshToken> RefreshTokens { get; set; }
 
@@ -55,8 +57,8 @@ namespace StudentManagementSystem.DAL.DataContext
 
             modelBuilder.Entity<StudentProfile>()
                 .HasOne(sp => sp.AcademicPlan)
-                .WithOne(ap => ap.Student)
-                .HasForeignKey<StudentProfile>(sp => sp.AcademicPlanId)
+                .WithMany(ap => ap.Students)
+                .HasForeignKey(sp => sp.AcademicPlanId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ============================
@@ -130,6 +132,49 @@ namespace StudentManagementSystem.DAL.DataContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ============================
+            // TRANSCRIPT RELATIONSHIPS
+            // ============================
+
+            // StudentProfile → Transcript (ONE-TO-MANY)
+            modelBuilder.Entity<Transcript>()
+                .HasOne(t => t.Student)
+                .WithMany(s => s.Transcripts)
+                .HasForeignKey(t => t.StudentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Course → Transcript (ONE-TO-MANY)
+            modelBuilder.Entity<Transcript>()
+                .HasOne(t => t.Course)
+                .WithMany()
+                .HasForeignKey(t => t.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Section → Transcript (ONE-TO-MANY)
+            modelBuilder.Entity<Transcript>()
+                .HasOne(t => t.Section)
+                .WithMany()
+                .HasForeignKey(t => t.SectionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ============================
+            // ACADEMIC PLAN COURSE RELATIONSHIPS
+            // ============================
+
+            // AcademicPlan → AcademicPlanCourse (ONE-TO-MANY)
+            modelBuilder.Entity<AcademicPlanCourse>()
+                .HasOne(apc => apc.AcademicPlan)
+                .WithMany(ap => ap.AcademicPlanCourses)
+                .HasForeignKey(apc => apc.AcademicPlanId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Course → AcademicPlanCourse (ONE-TO-MANY)
+            modelBuilder.Entity<AcademicPlanCourse>()
+                .HasOne(apc => apc.Course)
+                .WithMany()
+                .HasForeignKey(apc => apc.CourseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // ============================
             // 3. UNIQUE CONSTRAINTS
             // ============================
 
@@ -141,6 +186,15 @@ namespace StudentManagementSystem.DAL.DataContext
                 .HasIndex(ci => new { ci.CartId, ci.ScheduleSlotId })
                 .IsUnique();
 
+            // Unique constraint: Student can only have one transcript entry per course
+            modelBuilder.Entity<Transcript>()
+                .HasIndex(t => new { t.StudentId, t.CourseId, t.SectionId })
+                .IsUnique();
+
+            // Unique constraint: Each course in academic plan should be unique
+            modelBuilder.Entity<AcademicPlanCourse>()
+                .HasIndex(apc => new { apc.AcademicPlanId, apc.CourseId })
+                .IsUnique();
 
             // ============================
             // 4. ENUM CONVERSIONS
@@ -156,6 +210,10 @@ namespace StudentManagementSystem.DAL.DataContext
 
             modelBuilder.Entity<TimeSlot>()
                 .Property(t => t.Day)
+                .HasConversion<string>();
+
+            modelBuilder.Entity<AcademicPlanCourse>()
+                .Property(apc => apc.CourseType)
                 .HasConversion<string>();
 
         }

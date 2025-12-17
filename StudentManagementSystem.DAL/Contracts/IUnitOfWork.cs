@@ -15,6 +15,8 @@ namespace StudentManagementSystem.DAL.Contracts
         IBaseRepository<InstructorProfile> InstructorProfiles { get; }
         IBaseRepository<StudentProfile> StudentProfiles { get; }
         IBaseRepository<AcademicPlan> AcademicPlans { get; }
+        IBaseRepository<AcademicPlanCourse> AcademicPlanCourses { get; }
+        IBaseRepository<Transcript> Transcripts { get; }
 
         public IBaseRepository<Cart> Carts { get; }
         public IBaseRepository<CartItem> CartItems { get; }
