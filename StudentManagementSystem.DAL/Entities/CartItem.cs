@@ -12,10 +12,10 @@ namespace StudentManagementSystem.DAL.Entities
         public int CartItemId { get; set; }
         [ForeignKey("Cart")]
         public int CartId { get; set; }
-        public Cart Cart { get; set; }
+        public Cart Cart { get; set; } = null!;
         [ForeignKey("ScheduleSlot")]
         public int ScheduleSlotId { get; set; }
-        public ScheduleSlot ScheduleSlot { get; set; }
+        public ScheduleSlot ScheduleSlot { get; set; } = null!;
 
     }
 }

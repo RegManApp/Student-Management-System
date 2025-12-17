@@ -8,10 +8,10 @@ namespace StudentManagementSystem.DAL.Entities
         [Key]
         public int CourseId { get; set; }
         [Required]
-        public string CourseName { get; set; }
+        public string CourseName { get; set; } = string.Empty;
         public int CreditHours { get; set; }
         //public int AvailableSeats { get; set; }
-        public string CourseCode { get; set; }
+        public string CourseCode { get; set; } = string.Empty;
         public CourseCategory CourseCategory { get; set; }
         public string? Description { get; set; }
 

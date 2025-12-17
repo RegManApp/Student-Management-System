@@ -9,7 +9,7 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.CourseDTOs
 {
     public class CreateCourseDTO
     {
-        public string CourseName { get; set; }
+        public string CourseName { get; set; } = string.Empty;
         [Required]
         [Range(1, 4)]
         public int CreditHours { get; set; }
@@ -18,10 +18,10 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.CourseDTOs
         //public int AvailableSeats { get; set; }
         [Required]
         [StringLength(7, MinimumLength = 4)]
-        public string CourseCode { get; set; }
+        public string CourseCode { get; set; } = string.Empty;
         [Required]
         public int CourseCategoryId { get; set; }
-        public string Description { get; set; }
+        public string Description { get; set; } = string.Empty;
 
     }
 }

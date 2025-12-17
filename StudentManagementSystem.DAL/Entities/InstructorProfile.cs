@@ -9,8 +9,8 @@ namespace StudentManagementSystem.DAL.Entities
 
         [Required] public string Title { get; set; } = null!;
 
-        private ICollection<Section> Sections { get; set; }
-        private ICollection<ScheduleSlot> ScheduleSlots { get; set; } 
+        private ICollection<Section> Sections { get; set; } = new List<Section>();
+        private ICollection<ScheduleSlot> ScheduleSlots { get; set; } = new List<ScheduleSlot>();
         public string UserId { get; set; } = null!; //fk
         public BaseUser User { get; set; } = null!;
     }

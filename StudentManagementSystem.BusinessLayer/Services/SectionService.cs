@@ -102,14 +102,14 @@ namespace StudentManagementSystem.BusinessLayer.Services
             var query = sectionRepository
                 .GetAllAsQueryable()
                 .Include(s => s.Course)
-                .Include(s => s.Instructor)
+                .Include(s => s.Instructor!)
                     .ThenInclude(i => i.User)
                 .Include(s => s.Slots)
                     .ThenInclude(sl => sl.Room)
                 .Include(s => s.Slots)
                     .ThenInclude(sl => sl.TimeSlot)
                 .Include(s => s.Slots)
-                    .ThenInclude(sl => sl.Instructor)
+                    .ThenInclude(sl => sl.Instructor!)
                         .ThenInclude(i => i.User)
                 .AsQueryable();
 
@@ -213,14 +213,14 @@ namespace StudentManagementSystem.BusinessLayer.Services
             return sectionRepository
                 .GetAllAsQueryable()
                 .Include(s => s.Course)
-                .Include(s => s.Instructor)
+                .Include(s => s.Instructor!)
                     .ThenInclude(i => i.User)
                 .Include(s => s.Slots)
                     .ThenInclude(sl => sl.Room)
                 .Include(s => s.Slots)
                     .ThenInclude(sl => sl.TimeSlot)
                 .Include(s => s.Slots)
-                    .ThenInclude(sl => sl.Instructor)
+                    .ThenInclude(sl => sl.Instructor!)
                         .ThenInclude(i => i.User)
                 .Select(s => new ViewSectionDTO
                 {

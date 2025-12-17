@@ -6,11 +6,11 @@ namespace StudentManagementSystem.DAL.Entities
     public class AcademicPlan
     {
         [Key]
-        public string AcademicPlanId { get; set; }
-        public string MajorName { get; set; }
+        public string AcademicPlanId { get; set; } = string.Empty;
+        public string MajorName { get; set; } = string.Empty;
         public int Credits { get; set; }
         public ICollection<Course> Courses { get; set; } = new HashSet<Course>();
-        public StudentProfile Student { get; set; }
+        public StudentProfile Student { get; set; } = null!;
 
 
     }

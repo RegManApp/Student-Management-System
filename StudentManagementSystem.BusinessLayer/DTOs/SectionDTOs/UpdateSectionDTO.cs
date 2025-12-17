@@ -11,7 +11,7 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs
     {
         public int SectionId { get; set; }
         [Required]
-        public string Semester { get; set; }
+        public string Semester { get; set; } = string.Empty;
         public DateTime Year { get; set; }
         public int? InstructorId { get; set; }
         [Required]

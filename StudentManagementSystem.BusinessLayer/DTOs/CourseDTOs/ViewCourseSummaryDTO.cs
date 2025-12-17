@@ -10,8 +10,8 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.CourseDTOs
     public class ViewCourseSummaryDTO
     {
         public int CourseId { get; set; }
-        public string CourseName { get; set; }
+        public string CourseName { get; set; } = string.Empty;
         public int CreditHours { get; set; }
-        public string CourseCode { get; set; }
+        public string CourseCode { get; set; } = string.Empty;
     }
 }

@@ -11,9 +11,9 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs
 {
     public class CreateSectionDTO
     {
-       
+
         [Required]
-        public string Semester { get; set; }
+        public string Semester { get; set; } = string.Empty;
         public DateTime Year { get; set; }
         public int? InstructorId { get; set; }
         [Required]
@@ -23,7 +23,7 @@ namespace StudentManagementSystem.BusinessLayer.DTOs.SectionDTOs
         public int AvailableSeats { get; set; }
 
 
- //lecture slot data
+        //lecture slot data
         public int RoomId { get; set; }
         public int TimeSlotId { get; set; }
         public SlotType SlotType { get; set; } = SlotType.Lecture;

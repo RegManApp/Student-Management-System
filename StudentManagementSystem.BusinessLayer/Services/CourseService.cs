@@ -183,7 +183,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
                     CourseId = c.CourseId,
                     CourseName = c.CourseName,
                     CreditHours = c.CreditHours,
-                    Description = c.Description,
+                    Description = c.Description ?? string.Empty,
                     CourseCode = c.CourseCode,
                     CourseCategoryId = (int)c.CourseCategory,
                     CourseCategoryName = c.CourseCategory.ToString()
