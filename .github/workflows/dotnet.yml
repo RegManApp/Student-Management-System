@@ -26,23 +26,19 @@ jobs:
 
       - name: Restore dependencies
         run: dotnet restore
-        working-directory: ./Student-Management-System
 
       - name: Build
         run: dotnet build --configuration Release --no-restore
-        working-directory: ./Student-Management-System
 
       - name: Test
         run: dotnet test --configuration Release --no-build --verbosity normal
-        working-directory: ./Student-Management-System
         continue-on-error: true
 
       - name: Publish
         run: dotnet publish StudentManagementSystem.API/StudentManagementSystem.API.csproj --configuration Release --output ./publish
-        working-directory: ./Student-Management-System
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-package
-          path: ./Student-Management-System/publish
+          path: ./publish
