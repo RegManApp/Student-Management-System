@@ -160,16 +160,66 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Property<string>("AcademicPlanId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<int>("Credits")
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("ExpectedYearsToComplete")
                         .HasColumnType("int");
 
                     b.Property<string>("MajorName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("TotalCreditsRequired")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
                     b.HasKey("AcademicPlanId");
 
                     b.ToTable("AcademicPlans");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.AcademicPlanCourse", b =>
+                {
+                    b.Property<int>("AcademicPlanCourseId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AcademicPlanCourseId"));
+
+                    b.Property<string>("AcademicPlanId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("CourseType")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("RecommendedSemester")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RecommendedYear")
+                        .HasColumnType("int");
+
+                    b.HasKey("AcademicPlanCourseId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("AcademicPlanId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("AcademicPlanCourses");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.AdminProfile", b =>
@@ -194,6 +244,42 @@ namespace StudentManagementSystem.DAL.Migrations
                         .IsUnique();
 
                     b.ToTable("Admins");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EntityId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("EntityName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("UserEmail")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("AuditLogs");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.BaseUser", b =>
@@ -276,6 +362,49 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.ToTable("AspNetUsers", (string)null);
                 });
 
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Cart", b =>
+                {
+                    b.Property<int>("CartId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartId"));
+
+                    b.Property<int>("StudentProfileId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CartId");
+
+                    b.HasIndex("StudentProfileId")
+                        .IsUnique();
+
+                    b.ToTable("Carts");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.CartItem", b =>
+                {
+                    b.Property<int>("CartItemId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CartItemId"));
+
+                    b.Property<int>("CartId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScheduleSlotId")
+                        .HasColumnType("int");
+
+                    b.HasKey("CartItemId");
+
+                    b.HasIndex("ScheduleSlotId");
+
+                    b.HasIndex("CartId", "ScheduleSlotId")
+                        .IsUnique();
+
+                    b.ToTable("CartItems");
+                });
+
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Course", b =>
                 {
                     b.Property<int>("CourseId")
@@ -283,12 +412,6 @@ namespace StudentManagementSystem.DAL.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CourseId"));
-
-                    b.Property<string>("AcademicPlanId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("AvailableSeats")
-                        .HasColumnType("int");
 
                     b.Property<string>("CourseCategory")
                         .IsRequired()
@@ -305,9 +428,10 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Property<int>("CreditHours")
                         .HasColumnType("int");
 
-                    b.HasKey("CourseId");
+                    b.Property<string>("Description")
+                        .HasColumnType("nvarchar(max)");
 
-                    b.HasIndex("AcademicPlanId");
+                    b.HasKey("CourseId");
 
                     b.ToTable("Courses");
                 });
@@ -319,6 +443,9 @@ namespace StudentManagementSystem.DAL.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EnrollmentId"));
+
+                    b.Property<DateTime>("EnrolledAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("SectionId")
                         .HasColumnType("int");
@@ -364,37 +491,77 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.ToTable("Instructors");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Room", b =>
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.RefreshToken", b =>
                 {
-                    b.Property<int>("roomId")
+                    b.Property<int>("RefreshTokenId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("roomId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RefreshTokenId"));
 
-                    b.Property<string>("building")
+                    b.Property<string>("Device")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsRevoked")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("TokenHash")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<int>("capacity")
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("RefreshTokenId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshTokens");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Room", b =>
+                {
+                    b.Property<int>("RoomId")
+                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    b.Property<string>("roomNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoomId"));
 
-                    b.HasKey("roomId");
+                    b.Property<string>("Building")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("Capacity")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RoomNumber")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("RoomId");
 
                     b.ToTable("Rooms");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.ScheduleSlot", b =>
                 {
-                    b.Property<int>("scheduleSlotId")
+                    b.Property<int>("ScheduleSlotId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("scheduleSlotId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScheduleSlotId"));
+
+                    b.Property<int>("InstructorId")
+                        .HasColumnType("int");
 
                     b.Property<int>("RoomId")
                         .HasColumnType("int");
@@ -402,10 +569,15 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Property<int>("SectionId")
                         .HasColumnType("int");
 
+                    b.Property<int>("SlotType")
+                        .HasColumnType("int");
+
                     b.Property<int>("TimeSlotId")
                         .HasColumnType("int");
 
-                    b.HasKey("scheduleSlotId");
+                    b.HasKey("ScheduleSlotId");
+
+                    b.HasIndex("InstructorId");
 
                     b.HasIndex("RoomId");
 
@@ -424,10 +596,13 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("SectionId"));
 
+                    b.Property<int>("AvailableSeats")
+                        .HasColumnType("int");
+
                     b.Property<int>("CourseId")
                         .HasColumnType("int");
 
-                    b.Property<int>("InstructorId")
+                    b.Property<int?>("InstructorId")
                         .HasColumnType("int");
 
                     b.Property<string>("Semester")
@@ -458,6 +633,9 @@ namespace StudentManagementSystem.DAL.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<int>("CartId")
+                        .HasColumnType("int");
+
                     b.Property<int>("CompletedCredits")
                         .HasColumnType("int");
 
@@ -477,8 +655,7 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     b.HasKey("StudentId");
 
-                    b.HasIndex("AcademicPlanId")
-                        .IsUnique();
+                    b.HasIndex("AcademicPlanId");
 
                     b.HasIndex("UserId")
                         .IsUnique();
@@ -488,25 +665,75 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.TimeSlot", b =>
                 {
-                    b.Property<int>("timeSlotId")
+                    b.Property<int>("TimeSlotId")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("timeSlotId"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TimeSlotId"));
 
-                    b.Property<string>("day")
+                    b.Property<string>("Day")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<TimeSpan>("endTime")
+                    b.Property<TimeSpan>("EndTime")
                         .HasColumnType("time");
 
-                    b.Property<TimeSpan>("startTime")
+                    b.Property<TimeSpan>("StartTime")
                         .HasColumnType("time");
 
-                    b.HasKey("timeSlotId");
+                    b.HasKey("TimeSlotId");
 
                     b.ToTable("TimeSlots");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Transcript", b =>
+                {
+                    b.Property<int>("TranscriptId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("TranscriptId"));
+
+                    b.Property<DateTime>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("CourseId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreditHours")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Grade")
+                        .IsRequired()
+                        .HasMaxLength(10)
+                        .HasColumnType("nvarchar(10)");
+
+                    b.Property<double>("GradePoints")
+                        .HasColumnType("float");
+
+                    b.Property<int>("SectionId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Semester")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("int");
+
+                    b.HasKey("TranscriptId");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("SectionId");
+
+                    b.HasIndex("StudentId", "CourseId", "SectionId")
+                        .IsUnique();
+
+                    b.ToTable("Transcripts");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
@@ -560,6 +787,25 @@ namespace StudentManagementSystem.DAL.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.AcademicPlanCourse", b =>
+                {
+                    b.HasOne("StudentManagementSystem.DAL.Entities.AcademicPlan", "AcademicPlan")
+                        .WithMany("AcademicPlanCourses")
+                        .HasForeignKey("AcademicPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("AcademicPlan");
+
+                    b.Navigation("Course");
+                });
+
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.AdminProfile", b =>
                 {
                     b.HasOne("StudentManagementSystem.DAL.Entities.BaseUser", "User")
@@ -571,11 +817,34 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Navigation("User");
                 });
 
-            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Course", b =>
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Cart", b =>
                 {
-                    b.HasOne("StudentManagementSystem.DAL.Entities.AcademicPlan", null)
-                        .WithMany("Courses")
-                        .HasForeignKey("AcademicPlanId");
+                    b.HasOne("StudentManagementSystem.DAL.Entities.StudentProfile", "StudentProfile")
+                        .WithOne("Cart")
+                        .HasForeignKey("StudentManagementSystem.DAL.Entities.Cart", "StudentProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("StudentProfile");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.CartItem", b =>
+                {
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Cart", "Cart")
+                        .WithMany("CartItems")
+                        .HasForeignKey("CartId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("StudentManagementSystem.DAL.Entities.ScheduleSlot", "ScheduleSlot")
+                        .WithMany()
+                        .HasForeignKey("ScheduleSlotId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Cart");
+
+                    b.Navigation("ScheduleSlot");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Enrollment", b =>
@@ -608,31 +877,50 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.RefreshToken", b =>
+                {
+                    b.HasOne("StudentManagementSystem.DAL.Entities.BaseUser", "User")
+                        .WithMany("RefreshTokens")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.ScheduleSlot", b =>
                 {
-                    b.HasOne("StudentManagementSystem.DAL.Entities.Room", "room")
-                        .WithMany("schedule")
+                    b.HasOne("StudentManagementSystem.DAL.Entities.InstructorProfile", "Instructor")
+                        .WithMany()
+                        .HasForeignKey("InstructorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Room", "Room")
+                        .WithMany("ScheduleSlots")
                         .HasForeignKey("RoomId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("StudentManagementSystem.DAL.Entities.Section", "section")
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Section", "Section")
                         .WithMany("Slots")
                         .HasForeignKey("SectionId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("StudentManagementSystem.DAL.Entities.TimeSlot", "timeSlot")
+                    b.HasOne("StudentManagementSystem.DAL.Entities.TimeSlot", "TimeSlot")
                         .WithMany()
                         .HasForeignKey("TimeSlotId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("room");
+                    b.Navigation("Instructor");
 
-                    b.Navigation("section");
+                    b.Navigation("Room");
 
-                    b.Navigation("timeSlot");
+                    b.Navigation("Section");
+
+                    b.Navigation("TimeSlot");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Section", b =>
@@ -645,9 +933,7 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     b.HasOne("StudentManagementSystem.DAL.Entities.InstructorProfile", "Instructor")
                         .WithMany()
-                        .HasForeignKey("InstructorId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("InstructorId");
 
                     b.Navigation("Course");
 
@@ -657,8 +943,8 @@ namespace StudentManagementSystem.DAL.Migrations
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.StudentProfile", b =>
                 {
                     b.HasOne("StudentManagementSystem.DAL.Entities.AcademicPlan", "AcademicPlan")
-                        .WithOne("Student")
-                        .HasForeignKey("StudentManagementSystem.DAL.Entities.StudentProfile", "AcademicPlanId")
+                        .WithMany("Students")
+                        .HasForeignKey("AcademicPlanId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -673,12 +959,38 @@ namespace StudentManagementSystem.DAL.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Transcript", b =>
+                {
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudentManagementSystem.DAL.Entities.Section", "Section")
+                        .WithMany()
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudentManagementSystem.DAL.Entities.StudentProfile", "Student")
+                        .WithMany("Transcripts")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Course");
+
+                    b.Navigation("Section");
+
+                    b.Navigation("Student");
+                });
+
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.AcademicPlan", b =>
                 {
-                    b.Navigation("Courses");
+                    b.Navigation("AcademicPlanCourses");
 
-                    b.Navigation("Student")
-                        .IsRequired();
+                    b.Navigation("Students");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.BaseUser", b =>
@@ -687,12 +999,19 @@ namespace StudentManagementSystem.DAL.Migrations
 
                     b.Navigation("InstructorProfile");
 
+                    b.Navigation("RefreshTokens");
+
                     b.Navigation("StudentProfile");
+                });
+
+            modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Cart", b =>
+                {
+                    b.Navigation("CartItems");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Room", b =>
                 {
-                    b.Navigation("schedule");
+                    b.Navigation("ScheduleSlots");
                 });
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.Section", b =>
@@ -704,7 +1023,12 @@ namespace StudentManagementSystem.DAL.Migrations
 
             modelBuilder.Entity("StudentManagementSystem.DAL.Entities.StudentProfile", b =>
                 {
+                    b.Navigation("Cart")
+                        .IsRequired();
+
                     b.Navigation("Enrollments");
+
+                    b.Navigation("Transcripts");
                 });
 #pragma warning restore 612, 618
         }

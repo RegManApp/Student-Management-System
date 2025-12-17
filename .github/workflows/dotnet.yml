@@ -1,0 +1,40 @@
+name: .NET CI/CD
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+env:
+  DOTNET_VERSION: "8.0.x"
+  ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
+  ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore StudentManagementSystem.API/StudentManagementSystem.API.csproj
+
+      - name: Build
+        run: dotnet build StudentManagementSystem.API/StudentManagementSystem.API.csproj --configuration Release --no-restore
+
+      - name: Publish
+        run: dotnet publish StudentManagementSystem.API/StudentManagementSystem.API.csproj --configuration Release --output ./publish
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-package
+          path: ./publish

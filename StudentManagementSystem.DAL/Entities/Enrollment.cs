@@ -21,6 +21,9 @@ namespace StudentManagementSystem.DAL.Entities
         public StudentProfile? Student { get; set; }
         public Section? Section { get; set; }
 
+        public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
+
+
         // Operations
 
         public void ChangeStatus(Status newStatus)

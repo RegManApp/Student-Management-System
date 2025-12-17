@@ -10,7 +10,7 @@ namespace StudentManagementSystem.DAL.Entities
         [Key]
         public int SectionId { get; set; }
         [Required]
-        public string Semester { get; set; }
+        public string Semester { get; set; } = string.Empty;
         public DateTime Year { get; set; }
         [Required, ForeignKey("Instructor")]
         public int InstructorId { get; set; }
@@ -18,8 +18,8 @@ namespace StudentManagementSystem.DAL.Entities
         public int CourseId { get; set; }
 
         //navigation properties
-        public Course Course { get; set; }
-        public InstructorProfile Instructor { get; set; }
+        public Course Course { get; set; } = null!;
+        public InstructorProfile? Instructor { get; set; }
         public ICollection<ScheduleSlot> Slots { get; set; } = new HashSet<ScheduleSlot>();
         public ICollection<Enrollment> Enrollments { get; set; } = new HashSet<Enrollment>();
 

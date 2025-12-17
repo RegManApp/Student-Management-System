@@ -1,18 +1,19 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using StudentManagementSystem.API.Common;
+using StudentManagementSystem.API.Middleware;
+using StudentManagementSystem.API.Seeders;
 using StudentManagementSystem.BusinessLayer;
 using StudentManagementSystem.BusinessLayer.Services;
 using StudentManagementSystem.DAL;
 using StudentManagementSystem.DAL.DataContext;
 using StudentManagementSystem.DAL.Entities;
 using System.IdentityModel.Tokens.Jwt;
-using System.Text;
-using StudentManagementSystem.API.Seeders;
-using Microsoft.OpenApi.Models;
-//using System.Security.Cryptography.Xml;
-//using Microsoft.IdentityModel.JsonWebTokens;
 using System.Security.Claims;
+using System.Text;
 
 namespace StudentManagementSystem.API
 {
@@ -22,30 +23,20 @@ namespace StudentManagementSystem.API
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            var allowedOrigins = new[]
-            {
-                "https://regman.app",
-                "https://www.regman.app",
-                "https://api.regman.app",
-                "https://regman.pages.dev",
-                "http://localhost:5173"
-            };
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy("AllowRegman", policy =>
-                {
-                    policy.WithOrigins(allowedOrigins)
-                        .AllowAnyHeader()
-                        .AllowAnyMethod()
-                        .AllowCredentials();
-                });
-            });
-            
-            // Add Database Layer + Business Services
+            // =========================
+            // Database + Business Layer
+            // =========================
             builder.Services.AddDataBaseLayer(builder.Configuration);
             builder.Services.AddBusinessServices();
 
-            // Add Identity
+            // ==================
+            // HttpContext Accessor (IMPORTANT for Audit Logs)
+            // ==================
+            builder.Services.AddHttpContextAccessor();
+
+            // ========
+            // Identity
+            // ========
             builder.Services.AddIdentity<BaseUser, IdentityRole>(options =>
             {
                 options.Password.RequireDigit = true;
@@ -59,7 +50,9 @@ namespace StudentManagementSystem.API
             .AddEntityFrameworkStores<AppDbContext>()
             .AddDefaultTokenProviders();
 
-            // Add JWT Authentication
+            // =================
+            // JWT Authentication
+            // =================
             var key = Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]!);
 
             builder.Services.AddAuthentication(options =>
@@ -68,7 +61,7 @@ namespace StudentManagementSystem.API
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
             })
-            .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+            .AddJwtBearer(options =>
             {
                 options.SaveToken = true;
                 options.TokenValidationParameters = new TokenValidationParameters
@@ -87,51 +80,91 @@ namespace StudentManagementSystem.API
                 };
             });
 
-            // Add Authorization Policies (optional)
+            // ==================
+            // Authorization Policies
+            // ==================
             builder.Services.AddAuthorization(options =>
             {
-                options.AddPolicy("RequireAdmin", policy =>
-                    policy.RequireRole("Admin"));
+                options.AddPolicy("AdminOnly", p => p.RequireRole("Admin"));
+                options.AddPolicy("StudentOnly", p => p.RequireRole("Student"));
+                options.AddPolicy("InstructorOnly", p => p.RequireRole("Instructor"));
             });
 
-            // Register TokenService
+            // ==================
+            // Token Service
+            // ==================
             builder.Services.AddScoped<TokenService>();
 
-            // Controllers + Swagger
-            builder.Services.AddControllers();
-            builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen(options=>
-            {
-                options.AddSecurityDefinition(name: JwtBearerDefaults.AuthenticationScheme, securityScheme: new OpenApiSecurityScheme
+            // ==================
+            // Controllers + Validation Wrapper
+            // ==================
+            builder.Services.AddControllers()
+                .AddJsonOptions(options =>
                 {
-                    BearerFormat = "JWT",
-                    Name = "Authorization",
-                    Type = SecuritySchemeType.Http,
-                    Scheme = JwtBearerDefaults.AuthenticationScheme,
-                    Description = "Enter JWT Bearer token **_only_**",
-                    In = ParameterLocation.Header,
-
+                    options.JsonSerializerOptions.Converters.Add(
+                        new System.Text.Json.Serialization.JsonStringEnumConverter()
+                    );
                 });
-                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+
+            builder.Services.Configure<ApiBehaviorOptions>(options =>
+            {
+                options.InvalidModelStateResponseFactory = context =>
+                {
+                    var errors = context.ModelState
+                        .Where(x => x.Value!.Errors.Count > 0)
+                        .ToDictionary(
+                            x => x.Key,
+                            x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                        );
+
+                    var response = ApiResponse<object>.FailureResponse(
+                        message: "Validation failed",
+                        statusCode: StatusCodes.Status400BadRequest,
+                        errors: errors
+                    );
+
+                    return new BadRequestObjectResult(response);
+                };
+            });
+
+            // ==================
+            // Swagger + JWT
+            // ==================
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddSwaggerGen(options =>
+            {
+                options.AddSecurityDefinition(JwtBearerDefaults.AuthenticationScheme,
+                    new OpenApiSecurityScheme
                     {
-                        {
-
-                            new OpenApiSecurityScheme
-                            {
-                                Reference = new OpenApiReference
-                                {
-                                    Type= ReferenceType.SecurityScheme,
-                                    Id = JwtBearerDefaults.AuthenticationScheme
-                                }
-                            },
-                            Array.Empty<string>()
-                        } 
+                        BearerFormat = "JWT",
+                        Name = "Authorization",
+                        In = ParameterLocation.Header,
+                        Type = SecuritySchemeType.Http,
+                        Scheme = JwtBearerDefaults.AuthenticationScheme,
+                        Description = "Enter JWT Bearer token only"
                     });
+
+                options.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference
+                            {
+                                Type = ReferenceType.SecurityScheme,
+                                Id = JwtBearerDefaults.AuthenticationScheme
+                            }
+                        },
+                        Array.Empty<string>()
+                    }
                 });
+            });
 
             var app = builder.Build();
 
-            // Run Role + Admin seeding
+            // ==================
+            // Seed Roles + Admin
+            // ==================
             using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -141,18 +174,19 @@ namespace StudentManagementSystem.API
                 await UserSeeder.SeedAdminAsync(userManager);
             }
 
-            // Swagger only in Development
-            // if (app.Environment.IsDevelopment())
-            // {
+            // ==================
+            // Middleware Pipeline
+            // ==================
+            if (app.Environment.IsDevelopment())
+            {
                 app.UseSwagger();
                 app.UseSwaggerUI();
-            // }
+            }
+
+            app.UseMiddleware<GlobalExceptionMiddleware>();
 
             app.UseHttpsRedirection();
 
-            app.UseCors("AllowRegman");
-            
-            // IMPORTANT ORDER
             app.UseAuthentication();
             app.UseAuthorization();
 

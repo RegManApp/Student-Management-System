@@ -5,34 +5,21 @@ namespace StudentManagementSystem.DAL.Entities
     public class TimeSlot
     {
         [Key]
-        public int timeSlotId { get; set; }
-        [Required] public DayOfWeek day { get; set; }
-        [Required] public TimeSpan startTime { get; set; }
-        [Required] public TimeSpan endTime { get; set; }
+        public int TimeSlotId { get; set; }
 
-        // public TimeSlot() { }
+        [Required]
+        public DayOfWeek Day { get; set; }
 
-        // public TimeSlot(DayOfWeek day, TimeSpan start, TimeSpan end)
-        // {
-        //     this.day = day;
-        //     this.startTime = start;
-        //     this.endTime = end;
-        // }
+        [Required]
+        public TimeSpan StartTime { get; set; }
 
-        // public bool Overlaps(TimeSlot slot)
-        // {
-        //     // check days
-        //     if (this.day != slot.day)
-        //         return false;
-        //     // check time
-        //     bool isOverlapping = this.startTime < slot.endTime && this.endTime > slot.startTime;
-        //     return isOverlapping;
-        // }
+        [Required]
+        public TimeSpan EndTime { get; set; }
 
-        // // to display class data
-        // public override string ToString()
-        // {
-        //     return $"{day} {startTime} - {endTime}";
-        // }
+        // Simple validation helper
+        public bool IsValid()
+        {
+            return EndTime > StartTime;
+        }
     }
 }
