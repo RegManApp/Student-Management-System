@@ -31,7 +31,8 @@ namespace StudentManagementSystem.API
                 "https://regman.app",
                 "https://www.regman.app",
                 "https://regman.pages.dev",
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "http://localhost:5219"
             };
             builder.Services.AddCors(options =>
             {
