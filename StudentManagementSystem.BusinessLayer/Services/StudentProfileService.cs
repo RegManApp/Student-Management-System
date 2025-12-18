@@ -82,7 +82,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             };
             return viewStudent;
         }
-
+        //READ 
         public async Task<ViewStudentProfileDTO> GetProfileByIdAsync(int id) 
         {
             ViewStudentProfileDTO? student = await studentRepository.GetAllAsQueryable().AsNoTracking()
@@ -103,7 +103,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 throw new KeyNotFoundException($"Student with ID {id} does not exist.");
             return student;
         }
-
+        //READ ALL AND FILTER 
         public async Task<List<ViewStudentProfileDTO>> GetAllStudentsAsync(int? GPA, int? CompletedCredits, string? AcademicPlanId) 
         {
             var query = studentRepository.GetAllAsQueryable().AsNoTracking();
@@ -137,6 +137,44 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 throw new KeyNotFoundException("No students found with the specified criteria.");
             return students;
         }
+        //UPDATE - for admin use 
+        public async Task<ViewStudentProfileDTO> UpdateProfileAdminAsync(UpdateStudentProfileDTO studentDTO)
+        {
+            StudentProfile? student = await studentRepository.GetAllAsQueryable().AsNoTracking()
+                .Where(s => s.StudentId == studentDTO.StudentId)
+                .Include(st => st.User)
+                .FirstOrDefaultAsync();
+            if (student is null)
+                throw new KeyNotFoundException($"Student with ID {studentDTO.StudentId} does not exist.");
+
+            student.User.FullName = studentDTO.FullName;
+            student.User.Address = studentDTO.Address;
+            student.RegisteredCredits = studentDTO.RegisteredCredits;
+            student.GPA = studentDTO.GPA;
+            student.FamilyContact = studentDTO.FamilyContact;
+
+            studentRepository.Update(student);
+            await unitOfWork.SaveChangesAsync();
+
+            return new ViewStudentProfileDTO
+            {
+                StudentId = student.StudentId,
+                FullName = student.User.FullName,
+                Address = student.User.Address,
+                FamilyContact = student.FamilyContact,
+                CompletedCredits = student.CompletedCredits,
+                RegisteredCredits = student.RegisteredCredits,
+                GPA = student.GPA,
+                AcademicPlanId = student.AcademicPlanId,
+                RemainingCredits = await academicPlanRepository.GetAllAsQueryable().AsNoTracking().Where(ap => ap.AcademicPlanId == student.AcademicPlanId).Select(ap => ap.TotalCreditsRequired).FirstOrDefaultAsync() - (student.CompletedCredits + student.RegisteredCredits)
+            };
+        }
+        //Change password
+        public async Task<bool> ChangeStudentPassword(ChangePasswordDTO passwordDTO) 
+        {
+            
+        } 
+        
 
     }
 }

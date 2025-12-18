@@ -36,6 +36,13 @@ namespace StudentManagementSystem.API.Controllers
         {
             List<ViewStudentProfileDTO> result = await studentProfileService.GetAllStudentsAsync(GPA, CompletedCredits, AcademicPlanId);
             return Ok(ApiResponse<List<ViewStudentProfileDTO>>.SuccessResponse(result));
+        }
+        [Authorize(Roles = "Admin")]
+        [HttpPut]
+        public async Task<IActionResult> UpdateStudentAsync(UpdateStudentProfileDTO studentProfileDTO) 
+        {
+            var result = await studentProfileService.UpdateProfileAsync(studentProfileDTO);
+            return Ok(ApiResponse<ViewStudentProfileDTO>.SuccessResponse(result));
         }  
     }
 }
