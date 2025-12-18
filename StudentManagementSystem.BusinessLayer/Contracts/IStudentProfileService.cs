@@ -11,6 +11,7 @@ namespace StudentManagementSystem.BusinessLayer.Contracts
     {
         Task<ViewStudentProfileDTO> CreateProfileAsync(CreateStudentDTO studentDTO);
         Task<ViewStudentProfileDTO> GetProfileByIdAsync(int id);
+        Task<ViewStudentProfileDTO> GetProfileByIdAsync(string id);
         Task<List<ViewStudentProfileDTO>> GetAllStudentsAsync(int? GPA, int? CompletedCredits, string? AcademicPlanId);
         Task<ViewStudentProfileDTO> UpdateProfileAdminAsync(UpdateStudentProfileDTO studentDTO);
         Task ChangeStudentPassword(ChangePasswordDTO passwordDTO);

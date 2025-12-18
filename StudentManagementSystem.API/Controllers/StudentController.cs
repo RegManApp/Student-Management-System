@@ -5,6 +5,7 @@ using StudentManagementSystem.API.Common;
 using StudentManagementSystem.BusinessLayer.Contracts;
 using StudentManagementSystem.BusinessLayer.DTOs.StudentDTOs;
 using StudentManagementSystem.DAL.Entities;
+using System.Security.Claims;
 
 namespace StudentManagementSystem.API.Controllers
 {
@@ -18,6 +19,13 @@ namespace StudentManagementSystem.API.Controllers
         {
             this.studentProfileService = studentProfileService;
         }
+        private string GetStudentID()
+        {
+            var studentId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(studentId))
+                throw new InvalidOperationException("User ID claim (NameIdentifier) is missing from the authorized token.");
+            return studentId;
+        }
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> CreateStudentAsync(CreateStudentDTO studentDTO) 
@@ -29,6 +37,13 @@ namespace StudentManagementSystem.API.Controllers
         public async Task<IActionResult> GetStudentByIdAsync(int id) 
         {
             var result = await studentProfileService.GetProfileByIdAsync(id);
+            return Ok(ApiResponse<ViewStudentProfileDTO>.SuccessResponse(result));
+        }  
+        [HttpGet("me")]
+        public async Task<IActionResult> GetMyStudentProfileAsync() 
+        {
+            string studentId = GetStudentID();
+            var result = await studentProfileService.GetProfileByIdAsync(studentId);
             return Ok(ApiResponse<ViewStudentProfileDTO>.SuccessResponse(result));
         }  
         [HttpGet("students")]

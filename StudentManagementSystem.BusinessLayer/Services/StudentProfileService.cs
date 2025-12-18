@@ -103,6 +103,27 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 throw new KeyNotFoundException($"Student with ID {id} does not exist.");
             return student;
         }
+        //get by UserId
+        public async Task<ViewStudentProfileDTO> GetProfileByIdAsync(string id) 
+        {
+            ViewStudentProfileDTO? student = await studentRepository.GetAllAsQueryable().AsNoTracking()
+                .Where(s => s.User.Id == id)
+                .Select(st => new ViewStudentProfileDTO
+                {
+                    StudentId=st.StudentId,
+                    FullName=st.User.FullName,
+                    Address=st.User.Address,
+                    FamilyContact = st.FamilyContact,
+                    CompletedCredits = st.CompletedCredits,
+                    RegisteredCredits = st.RegisteredCredits,
+                    GPA=st.GPA,
+                    RemainingCredits=st.AcademicPlan.TotalCreditsRequired-(st.CompletedCredits+st.RegisteredCredits)
+                })
+                .FirstOrDefaultAsync();
+            if (student is null)
+                throw new KeyNotFoundException($"Student with ID {id} does not exist.");
+            return student;
+        }
         //READ ALL AND FILTER 
         public async Task<List<ViewStudentProfileDTO>> GetAllStudentsAsync(int? GPA, int? CompletedCredits, string? AcademicPlanId) 
         {
