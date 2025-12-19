@@ -30,5 +30,12 @@ namespace StudentManagementSystem.API.Controllers
             var response = await officeHoursService.CreateOfficeHours(officeHoursDTO);
             return Ok(ApiResponse<ViewOfficeHoursDTO>.SuccessResponse(response));
         }
+        [Authorize(Roles ="Admin")]
+        [HttpDelete("id")]
+        public async Task<IActionResult> CreateOfficeHoursByAdmin(int id) 
+        {
+            await officeHoursService.DeleteOfficeHour(id);
+            return Ok(ApiResponse<string>.SuccessResponse("Successfully deleted office hours."));
+        }
     }
 }

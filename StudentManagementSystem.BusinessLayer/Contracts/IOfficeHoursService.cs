@@ -11,6 +11,7 @@ namespace StudentManagementSystem.BusinessLayer.Contracts
     {
         Task<List<ViewOfficeHoursDTO>> GetOfficeHoursByInstructorIdAsync(int instructorId);
         Task<ViewOfficeHoursDTO> CreateOfficeHours(CreateOfficeHoursDTO hoursDTO);
+        Task DeleteOfficeHour(int id);
 
     }
 }

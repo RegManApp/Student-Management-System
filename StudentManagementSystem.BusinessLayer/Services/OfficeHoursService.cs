@@ -78,6 +78,13 @@ namespace StudentManagementSystem.BusinessLayer.Services
                 InstructorName = officeHour.Instructor.User.FullName
             };
         }
+        //DELETE
+        public async Task DeleteOfficeHour(int id)
+        {
+            bool deleted = await officeHoursRepository.DeleteAsync(id);
+            if (!deleted)
+                throw new Exception($"Office hours with ID {id} do not exist.");
+        }
 
 
     }
