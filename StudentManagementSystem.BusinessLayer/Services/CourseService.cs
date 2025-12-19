@@ -231,27 +231,21 @@ namespace StudentManagementSystem.BusinessLayer.Services
         // =========================
         public async Task<ViewCourseDetailsDTO> GetCourseByIdAsync(int id)
         {
-            Expression<Func<Course, bool>> filter = c => c.CourseId == id;
+            var course = await unitOfWork.Courses.GetByIdAsync(id);
 
-            Expression<Func<Course, ViewCourseDetailsDTO>> projection = c =>
-                new ViewCourseDetailsDTO
-                {
-                    CourseId = c.CourseId,
-                    CourseName = c.CourseName,
-                    CreditHours = c.CreditHours,
-                    Description = c.Description ?? string.Empty,
-                    CourseCode = c.CourseCode,
-                    CourseCategoryId = (int)c.CourseCategory,
-                    CourseCategoryName = c.CourseCategory.ToString()
-                };
-
-            var query = courseRepository.GetFilteredAndProjected(filter, projection);
-            var result = await query.SingleOrDefaultAsync();
-
-            if (result == null)
+            if (course == null)
                 throw new Exception($"Course with ID: {id} not found.");
 
-            return result;
+            return new ViewCourseDetailsDTO
+            {
+                CourseId = course.CourseId,
+                CourseName = course.CourseName,
+                CreditHours = course.CreditHours,
+                Description = course.Description ?? string.Empty,
+                CourseCode = course.CourseCode,
+                CourseCategoryId = (int)course.CourseCategory,
+                CourseCategoryName = course.CourseCategory.ToString()
+            };
         }
 
         // =========================

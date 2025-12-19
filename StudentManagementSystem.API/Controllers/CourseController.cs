@@ -21,9 +21,9 @@ namespace StudentManagementSystem.API.Controllers
 
         // =========================
         // Get Course Details By Id
-        // Admin + Instructor
+        // Admin + Instructor + Student
         // =========================
-        [Authorize(Roles = "Admin,Instructor")]
+        [Authorize(Roles = "Admin,Instructor,Student")]
         [HttpGet("{id}")]
         public async Task<IActionResult> GetCourseByIdAsync(int id)
         {
