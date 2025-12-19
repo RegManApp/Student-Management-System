@@ -24,7 +24,7 @@ namespace StudentManagementSystem.API
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
-            
+
             // ==================
             // CORS Policy
             // ==================
@@ -34,7 +34,12 @@ namespace StudentManagementSystem.API
                 "https://www.regman.app",
                 "https://regman.pages.dev",
                 "http://localhost:5173",
-                "http://localhost:5219"
+                "https://localhost:5173/",
+                "http://localhost:5174",
+                "https://localhost:5174",
+                "http://localhost:5236",
+                "http://localhost:3000",
+                "https://localhost:7025"
             };
             builder.Services.AddCors(options =>
             {
@@ -46,6 +51,7 @@ namespace StudentManagementSystem.API
                         .AllowCredentials();
                 });
             });
+
 
             //Add Websocket SignalR 
             builder.Services.AddSignalR();
@@ -227,10 +233,10 @@ namespace StudentManagementSystem.API
 
             app.UseMiddleware<GlobalExceptionMiddleware>();
 
+            app.UseCors("AllowRegman");
+
             app.UseHttpsRedirection();
 
-            app.UseCors("AllowRegman");
-            
             app.UseAuthentication();
             app.UseAuthorization();
 

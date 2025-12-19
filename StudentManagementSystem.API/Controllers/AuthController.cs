@@ -95,13 +95,22 @@ namespace StudentManagementSystem.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDTO dto)
         {
-            var user = await userManager.FindByEmailAsync(dto.Email);
+            var user = await userManager.Users
+                .Include(u => u.InstructorProfile)
+                .FirstOrDefaultAsync(u => u.Email == dto.Email);
+
             if (user == null)
-                return Unauthorized("Invalid credentials");
+                return Unauthorized(ApiResponse<string>.FailureResponse(
+                    "Invalid credentials",
+                    StatusCodes.Status401Unauthorized
+                ));
 
             var valid = await userManager.CheckPasswordAsync(user, dto.Password);
             if (!valid)
-                return Unauthorized("Invalid credentials");
+                return Unauthorized(ApiResponse<string>.FailureResponse(
+                    "Invalid credentials",
+                    StatusCodes.Status401Unauthorized
+                ));
 
             var roles = await userManager.GetRolesAsync(user);
 
@@ -121,19 +130,24 @@ namespace StudentManagementSystem.API.Controllers
             await unitOfWork.RefreshTokens.AddAsync(refreshEntity);
             await unitOfWork.SaveChangesAsync();
 
-            return Ok(new LoginResponseDTO
+            return Ok(ApiResponse<LoginResponseDTO>.SuccessResponse(new LoginResponseDTO
             {
                 AccessToken = accessToken,
-                RefreshToken = refreshToken
-            });
+                RefreshToken = refreshToken,
+                Email = user.Email!,
+                FullName = user.FullName,
+                Role = roles.FirstOrDefault() ?? user.Role,
+                UserId = user.Id,
+                InstructorTitle = user.InstructorProfile?.Title ?? null
+            }));
         }
 
         // =========================
-        // Me
+        // Change Password
         // =========================
         [Authorize]
-        [HttpGet("me")]
-        public async Task<IActionResult> Me()
+        [HttpPost("change-password")]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordDTO dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (userId == null)
@@ -153,11 +167,100 @@ namespace StudentManagementSystem.API.Controllers
                 ));
             }
 
+            var result = await userManager.ChangePasswordAsync(user, dto.CurrentPassword, dto.NewPassword);
+
+            if (!result.Succeeded)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    "Password change failed",
+                    StatusCodes.Status400BadRequest,
+                    result.Errors.Select(e => e.Description)
+                ));
+            }
+
+            // Audit Log
+            await auditLogService.LogAsync(
+                user.Id,
+                user.Email!,
+                "UPDATE",
+                "Password",
+                user.Id
+            );
+
+            return Ok(ApiResponse<string>.SuccessResponse(
+                "Password changed successfully"
+            ));
+        }
+
+        // =========================
+        // Me
+        // =========================
+        [Authorize]
+        [HttpGet("me")]
+        public async Task<IActionResult> Me()
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (userId == null)
+            {
+                return Unauthorized(ApiResponse<string>.FailureResponse(
+                    "Unauthorized",
+                    StatusCodes.Status401Unauthorized
+                ));
+            }
+
+            var user = await userManager.Users
+                .Include(u => u.InstructorProfile)
+                .Include(u => u.StudentProfile)
+                    .ThenInclude(sp => sp!.AcademicPlan)
+                .FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (user == null)
+            {
+                return Unauthorized(ApiResponse<string>.FailureResponse(
+                    "User not found",
+                    StatusCodes.Status401Unauthorized
+                ));
+            }
+
+            // Build response based on role
+            object? profileData = null;
+            if (user.Role == "Student" && user.StudentProfile != null)
+            {
+                profileData = new
+                {
+                    StudentId = user.StudentProfile.StudentId,
+                    CompletedCredits = user.StudentProfile.CompletedCredits,
+                    RegisteredCredits = user.StudentProfile.RegisteredCredits,
+                    GPA = user.StudentProfile.GPA,
+                    FamilyContact = user.StudentProfile.FamilyContact,
+                    AcademicPlan = user.StudentProfile.AcademicPlan != null ? new
+                    {
+                        user.StudentProfile.AcademicPlan.AcademicPlanId,
+                        AcademicPlanName = user.StudentProfile.AcademicPlan.MajorName,
+                        TotalCreditHours = user.StudentProfile.AcademicPlan.TotalCreditsRequired
+                    } : null
+                };
+            }
+            else if (user.Role == "Instructor" && user.InstructorProfile != null)
+            {
+                profileData = new
+                {
+                    InstructorId = user.InstructorProfile.InstructorId,
+                    Title = user.InstructorProfile.Title,
+                    Degree = user.InstructorProfile.Degree.ToString(),
+                    Department = user.InstructorProfile.Department
+                };
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
+                user.Id,
                 user.FullName,
                 user.Email,
-                user.Role
+                user.Role,
+                user.Address,
+                InstructorTitle = user.InstructorProfile?.Title,
+                Profile = profileData
             }));
         }
 

@@ -1,4 +1,5 @@
-﻿using StudentManagementSystem.DAL.Contracts;
+﻿using Microsoft.EntityFrameworkCore;
+using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
 using StudentManagementSystem.DAL.Repositories;
 
@@ -10,6 +11,7 @@ namespace StudentManagementSystem.DAL.DataContext
         //private readonly UserManager<BaseUser> userManager;
         private Lazy<IBaseRepository<AcademicPlan>> academicPlans { get; set; }
         private Lazy<IBaseRepository<AcademicPlanCourse>> academicPlanCourses { get; set; }
+        private Lazy<IBaseRepository<OfficeHour>> officeHours { get; set; }
         private Lazy<IBaseRepository<Transcript>> transcripts { get; set; }
         private Lazy<IBaseRepository<CartItem>> cartItems { get; set; }
         private Lazy<IBaseRepository<Cart>> carts { get; set; }
@@ -31,6 +33,7 @@ namespace StudentManagementSystem.DAL.DataContext
         {
             dbcontext = context;
             //this.userManager = userManager;
+            officeHours = new Lazy<IBaseRepository<OfficeHour>>(() => new BaseRepository<OfficeHour>(dbcontext));
             academicPlans = new Lazy<IBaseRepository<AcademicPlan>>(() => new BaseRepository<AcademicPlan>(dbcontext));
             academicPlanCourses = new Lazy<IBaseRepository<AcademicPlanCourse>>(() => new BaseRepository<AcademicPlanCourse>(dbcontext));
             transcripts = new Lazy<IBaseRepository<Transcript>>(() => new BaseRepository<Transcript>(dbcontext));
@@ -61,6 +64,7 @@ namespace StudentManagementSystem.DAL.DataContext
         public IBaseRepository<TimeSlot> TimeSlots => timeSlots.Value;
         public IBaseRepository<Section> Sections => sections.Value;
         public IBaseRepository<ScheduleSlot> ScheduleSlots => scheduleSlots.Value;
+        public IBaseRepository<OfficeHour> OfficeHours => officeHours.Value;
         public IBaseRepository<Transcript> Transcripts => transcripts.Value;
         public IBaseRepository<Enrollment> Enrollments => enrollments.Value;
         public IBaseRepository<AdminProfile> AdminProfiles => adminProfiles.Value;
@@ -73,6 +77,7 @@ namespace StudentManagementSystem.DAL.DataContext
         public IBaseRepository<ConversationParticipant> ConversationParticipants => conversationParticipants.Value;
         public IMessageRepository Messages => messages.Value;
 
+        public DbContext Context => dbcontext;
 
         public async Task SaveChangesAsync()
         {
