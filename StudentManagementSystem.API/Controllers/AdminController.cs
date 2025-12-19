@@ -200,6 +200,67 @@ namespace StudentManagementSystem.API.Controllers
         }
 
         // =========================
+        // Update User
+        // =========================
+        [HttpPut("users/{id}")]
+        public async Task<IActionResult> UpdateUser(string id, [FromBody] UpdateUserDTO dto)
+        {
+            var user = await userManager.FindByIdAsync(id);
+            if (user == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    "User not found",
+                    StatusCodes.Status404NotFound
+                ));
+
+            // Update user properties
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+                user.FullName = dto.FullName;
+
+            if (!string.IsNullOrWhiteSpace(dto.Address))
+                user.Address = dto.Address;
+
+            if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
+            {
+                // Check if email already exists
+                var existingUser = await userManager.FindByEmailAsync(dto.Email);
+                if (existingUser != null && existingUser.Id != id)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(
+                        "Email already in use by another user",
+                        StatusCodes.Status400BadRequest
+                    ));
+                }
+                user.Email = dto.Email;
+                user.UserName = dto.Email;
+                user.NormalizedEmail = dto.Email.ToUpper();
+                user.NormalizedUserName = dto.Email.ToUpper();
+            }
+
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    "Failed to update user",
+                    StatusCodes.Status400BadRequest,
+                    result.Errors.Select(e => e.Description)
+                ));
+            }
+
+            // Audit Log
+            var (adminId, adminEmail) = GetAdminInfo();
+            await auditLogService.LogAsync(adminId, adminEmail, "UPDATE", "User", id);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                user.Id,
+                user.Email,
+                user.FullName,
+                user.Role,
+                user.Address
+            }, "User updated successfully"));
+        }
+
+        // =========================
         // Delete User
         // =========================
         [HttpDelete("users/{id}")]
@@ -341,6 +402,91 @@ namespace StudentManagementSystem.API.Controllers
                     user.StudentProfile.GPA
                 }
             }));
+        }
+
+        // =========================
+        // Update Student
+        // =========================
+        [HttpPut("students/{id}")]
+        public async Task<IActionResult> UpdateStudent(string id, [FromBody] UpdateStudentDTO dto)
+        {
+            var user = await userManager.Users
+                .Include(u => u.StudentProfile)
+                .FirstOrDefaultAsync(u => u.Id == id && u.Role == "Student");
+
+            if (user == null)
+                return NotFound(ApiResponse<string>.FailureResponse(
+                    "Student not found",
+                    StatusCodes.Status404NotFound
+                ));
+
+            // Update user properties
+            if (!string.IsNullOrWhiteSpace(dto.FullName))
+                user.FullName = dto.FullName;
+
+            if (!string.IsNullOrWhiteSpace(dto.Address))
+                user.Address = dto.Address;
+
+            if (!string.IsNullOrWhiteSpace(dto.Email) && dto.Email != user.Email)
+            {
+                var existingUser = await userManager.FindByEmailAsync(dto.Email);
+                if (existingUser != null && existingUser.Id != id)
+                {
+                    return BadRequest(ApiResponse<string>.FailureResponse(
+                        "Email already in use by another user",
+                        StatusCodes.Status400BadRequest
+                    ));
+                }
+                user.Email = dto.Email;
+                user.UserName = dto.Email;
+                user.NormalizedEmail = dto.Email.ToUpper();
+                user.NormalizedUserName = dto.Email.ToUpper();
+            }
+
+            // Update student profile properties
+            if (user.StudentProfile != null)
+            {
+                if (dto.GPA.HasValue)
+                    user.StudentProfile.GPA = dto.GPA.Value;
+
+                if (dto.CompletedCredits.HasValue)
+                    user.StudentProfile.CompletedCredits = dto.CompletedCredits.Value;
+
+                if (dto.RegisteredCredits.HasValue)
+                    user.StudentProfile.RegisteredCredits = dto.RegisteredCredits.Value;
+            }
+
+            var result = await userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                return BadRequest(ApiResponse<object>.FailureResponse(
+                    "Failed to update student",
+                    StatusCodes.Status400BadRequest,
+                    result.Errors.Select(e => e.Description)
+                ));
+            }
+
+            // Save student profile changes
+            await unitOfWork.SaveChangesAsync();
+
+            var (adminId, adminEmail) = GetAdminInfo();
+            await auditLogService.LogAsync(adminId, adminEmail, "UPDATE", "Student", id);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                user.Id,
+                user.Email,
+                user.FullName,
+                user.Role,
+                user.Address,
+                StudentProfile = user.StudentProfile == null ? null : new
+                {
+                    user.StudentProfile.StudentId,
+                    user.StudentProfile.CompletedCredits,
+                    user.StudentProfile.RegisteredCredits,
+                    user.StudentProfile.GPA
+                }
+            }, "Student updated successfully"));
         }
 
         // =========================
@@ -500,5 +646,22 @@ namespace StudentManagementSystem.API.Controllers
     public class UpdateRoleDTO
     {
         public string NewRole { get; set; } = null!;
+    }
+
+    public class UpdateUserDTO
+    {
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+        public string? Address { get; set; }
+    }
+
+    public class UpdateStudentDTO
+    {
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+        public string? Address { get; set; }
+        public double? GPA { get; set; }
+        public int? CompletedCredits { get; set; }
+        public int? RegisteredCredits { get; set; }
     }
 }

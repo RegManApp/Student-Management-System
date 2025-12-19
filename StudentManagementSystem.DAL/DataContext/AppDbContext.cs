@@ -65,6 +65,17 @@ namespace StudentManagementSystem.DAL.DataContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             // ============================
+            // COURSE → SECTION CASCADE DELETE
+            // ============================
+
+            // Course → Section (ONE-TO-MANY with CASCADE)
+            modelBuilder.Entity<Section>()
+                .HasOne(s => s.Course)
+                .WithMany()
+                .HasForeignKey(s => s.CourseId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // ============================
             // 2. ONE-TO-MANY RELATIONSHIPS
             // ============================
 
@@ -97,11 +108,12 @@ namespace StudentManagementSystem.DAL.DataContext
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Section → Enrollment
+            // Section → Enrollment (CASCADE - when section deleted, enrollments are deleted)
             modelBuilder.Entity<Enrollment>()
                 .HasOne(e => e.Section)
                 .WithMany(s => s.Enrollments)
                 .HasForeignKey(e => e.SectionId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // StudentProfile → Enrollment
             modelBuilder.Entity<Enrollment>()
@@ -125,14 +137,14 @@ namespace StudentManagementSystem.DAL.DataContext
                 .OnDelete(DeleteBehavior.Cascade);
 
             // ============================
-            // CartItem → ScheduleSlot (MANY-TO-ONE)
+            // CartItem → ScheduleSlot (MANY-TO-ONE with CASCADE)
             // ============================
 
             modelBuilder.Entity<CartItem>()
                 .HasOne(ci => ci.ScheduleSlot)
                 .WithMany()
                 .HasForeignKey(ci => ci.ScheduleSlotId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             // ============================
             // TRANSCRIPT RELATIONSHIPS
@@ -218,7 +230,7 @@ namespace StudentManagementSystem.DAL.DataContext
                 .HasOne(ohb => ohb.Student)
                 .WithMany(s => s.OfficeHourBookings)
                 .HasForeignKey(ohb => ohb.StudentId)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<OfficeHour>()
                 .HasOne(oh => oh.Instructor)
