@@ -336,6 +336,64 @@ namespace StudentManagementSystem.BusinessLayer.Services
         }
 
         // =====================================
+        // Calculate Simulated GPA (no persistence)
+        // simulatedCourses can contain either replacements (TranscriptId) or new courses (CreditHours + Grade)
+        // =====================================
+        public async Task<double> CalculateSimulatedGPAAsync(int studentId, IEnumerable<SimulateCourseDTO> simulatedCourses)
+        {
+            var transcripts = await unitOfWork.Transcripts
+                .GetAllAsQueryable()
+                .Where(t => t.StudentId == studentId)
+                .ToListAsync();
+
+            // Create a working list of (creditHours, gradePoints)
+            var working = new List<(int CreditHours, double GradePoints)>();
+
+            // Start with existing transcripts
+            foreach (var t in transcripts)
+            {
+                working.Add((t.CreditHours, t.GradePoints));
+            }
+
+            // Apply simulations
+            foreach (var sim in simulatedCourses ?? Enumerable.Empty<SimulateCourseDTO>())
+            {
+                if (string.IsNullOrWhiteSpace(sim.Grade) || !GradeHelper.IsValidGrade(sim.Grade))
+                    continue; // ignore invalid entries
+
+                var gp = GradeHelper.GetGradePoints(sim.Grade);
+
+                if (sim.TranscriptId.HasValue)
+                {
+                    // replace existing transcript with same id
+                    var idx = transcripts.FindIndex(x => x.TranscriptId == sim.TranscriptId.Value);
+                    if (idx >= 0)
+                    {
+                        // replace in working list at same position
+                        working[idx] = (transcripts[idx].CreditHours, gp);
+                    }
+                    else if (sim.CreditHours.HasValue)
+                    {
+                        // if transcript id not found, treat as new course
+                        working.Add((sim.CreditHours.Value, gp));
+                    }
+                }
+                else if (sim.CreditHours.HasValue)
+                {
+                    working.Add((sim.CreditHours.Value, gp));
+                }
+            }
+
+            if (!working.Any())
+                return 0.0;
+
+            double totalQualityPoints = working.Sum(w => w.GradePoints * w.CreditHours);
+            int totalCredits = working.Sum(w => w.CreditHours);
+
+            return totalCredits > 0 ? Math.Round(totalQualityPoints / totalCredits, 2) : 0.0;
+        }
+
+        // =====================================
         // Recalculate And Update Student GPA
         // =====================================
         public async Task RecalculateAndUpdateStudentGPAAsync(int studentId)

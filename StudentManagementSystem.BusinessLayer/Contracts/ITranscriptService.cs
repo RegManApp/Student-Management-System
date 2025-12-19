@@ -32,6 +32,11 @@ namespace StudentManagementSystem.BusinessLayer.Contracts
         Task RecalculateAndUpdateStudentGPAAsync(int studentId);
 
         // =====================================
+        // GPA Simulation (no persistence)
+        // =====================================
+        Task<double> CalculateSimulatedGPAAsync(int studentId, IEnumerable<SimulateCourseDTO> simulatedCourses);
+
+        // =====================================
         // Bulk Operations (Admin)
         // =====================================
         Task<IEnumerable<ViewTranscriptDTO>> GetAllTranscriptsAsync(
