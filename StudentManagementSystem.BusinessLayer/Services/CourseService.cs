@@ -260,6 +260,7 @@ namespace StudentManagementSystem.BusinessLayer.Services
             if (existingCourse == null)
                 throw new Exception($"Course with ID {courseDTO.CourseId} not found.");
 
+            existingCourse.CourseName = courseDTO.CourseName;
             existingCourse.CreditHours = courseDTO.CreditHours;
             existingCourse.CourseCode = courseDTO.CourseCode;
             existingCourse.CourseCategory = (CourseCategory)courseDTO.CourseCategoryId;
