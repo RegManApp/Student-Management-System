@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using StudentManagementSystem.BusinessLayer.Services;
 using StudentManagementSystem.DAL.DataContext;
 using StudentManagementSystem.DAL.Entities;
 using System.Security.Claims;
@@ -13,10 +14,12 @@ namespace StudentManagementSystem.API.Controllers
     public class OfficeHourController : ControllerBase
     {
         private readonly AppDbContext _context;
+        private readonly INotificationService _notificationService;
 
-        public OfficeHourController(AppDbContext context)
+        public OfficeHourController(AppDbContext context, INotificationService notificationService)
         {
             _context = context;
+            _notificationService = notificationService;
         }
 
         #region DTOs

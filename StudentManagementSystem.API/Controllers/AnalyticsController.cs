@@ -119,6 +119,7 @@ namespace StudentManagementSystem.API.Controllers
             var sections = await unitOfWork.Sections.GetAllAsQueryable()
                 .Include(s => s.Course)
                 .Include(s => s.Enrollments)
+                .Where(s => s.Course != null)
                 .ToListAsync();
 
             var courseStats = sections
@@ -200,14 +201,14 @@ namespace StudentManagementSystem.API.Controllers
                 .Include(s => s.Instructor)
                     .ThenInclude(i => i!.User)
                 .Include(s => s.Enrollments)
-                .Where(s => s.InstructorId != null)
+                .Where(s => s.InstructorId != null && s.Instructor != null && s.Instructor.User != null)
                 .ToListAsync();
 
             var instructorStats = sections
                 .GroupBy(s => new
                 {
                     s.Instructor!.InstructorId,
-                    s.Instructor.User.FullName,
+                    FullName = s.Instructor.User?.FullName ?? "Unknown",
                     s.Instructor.Title,
                     s.Instructor.Degree,
                     s.Instructor.Department

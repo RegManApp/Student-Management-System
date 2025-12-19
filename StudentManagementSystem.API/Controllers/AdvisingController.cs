@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudentManagementSystem.API.Common;
 using StudentManagementSystem.BusinessLayer.Contracts;
+using StudentManagementSystem.BusinessLayer.Services;
 using StudentManagementSystem.DAL.Contracts;
 using StudentManagementSystem.DAL.Entities;
 using System.Security.Claims;
@@ -18,15 +19,18 @@ namespace StudentManagementSystem.API.Controllers
         private readonly IUnitOfWork unitOfWork;
         private readonly UserManager<BaseUser> userManager;
         private readonly IAuditLogService auditLogService;
+        private readonly INotificationService notificationService;
 
         public AdvisingController(
             IUnitOfWork unitOfWork,
             UserManager<BaseUser> userManager,
-            IAuditLogService auditLogService)
+            IAuditLogService auditLogService,
+            INotificationService notificationService)
         {
             this.unitOfWork = unitOfWork;
             this.userManager = userManager;
             this.auditLogService = auditLogService;
+            this.notificationService = notificationService;
         }
 
         private (string id, string email) GetUserInfo()
@@ -151,6 +155,16 @@ namespace StudentManagementSystem.API.Controllers
 
             await auditLogService.LogAsync(userId, userEmail, "APPROVE", "Enrollment", enrollmentId.ToString());
 
+            // Send notification to student
+            if (enrollment.Student?.UserId != null && enrollment.Section?.Course != null)
+            {
+                await notificationService.CreateEnrollmentApprovedNotificationAsync(
+                    enrollment.Student.UserId,
+                    enrollment.Section.Course.CourseName,
+                    enrollment.Section.SectionName
+                );
+            }
+
             return Ok(ApiResponse<string>.SuccessResponse("Enrollment approved successfully"));
         }
 
@@ -193,6 +207,17 @@ namespace StudentManagementSystem.API.Controllers
             await unitOfWork.SaveChangesAsync();
 
             await auditLogService.LogAsync(userId, userEmail, "DECLINE", "Enrollment", enrollmentId.ToString());
+
+            // Send notification to student
+            if (enrollment.Student?.UserId != null && enrollment.Section?.Course != null)
+            {
+                await notificationService.CreateEnrollmentDeclinedNotificationAsync(
+                    enrollment.Student.UserId,
+                    enrollment.Section.Course.CourseName,
+                    enrollment.Section.SectionName,
+                    dto.Reason
+                );
+            }
 
             return Ok(ApiResponse<string>.SuccessResponse("Enrollment declined"));
         }

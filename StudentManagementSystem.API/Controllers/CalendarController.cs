@@ -94,8 +94,12 @@ namespace StudentManagementSystem.API.Controllers
                 // Generate class events for the date range
                 foreach (var enrollment in enrollments)
                 {
+                    if (enrollment.Section?.Slots == null) continue;
+
                     foreach (var slot in enrollment.Section.Slots)
                     {
+                        if (slot.TimeSlot == null) continue;
+
                         // Generate recurring class events
                         var currentDate = startDate;
                         while (currentDate <= endDate)
@@ -105,14 +109,14 @@ namespace StudentManagementSystem.API.Controllers
                                 events.Add(new
                                 {
                                     id = $"class-{enrollment.EnrollmentId}-{slot.ScheduleSlotId}-{currentDate:yyyyMMdd}",
-                                    title = $"{enrollment.Section.Course.CourseName} ({enrollment.Section.SectionName})",
+                                    title = $"{enrollment.Section.Course?.CourseName ?? "Unknown"} ({enrollment.Section.SectionName})",
                                     start = currentDate.Date.Add(slot.TimeSlot.StartTime),
                                     end = currentDate.Date.Add(slot.TimeSlot.EndTime),
                                     type = "class",
                                     color = "#3b82f6",
                                     extendedProps = new
                                     {
-                                        courseCode = enrollment.Section.Course.CourseCode,
+                                        courseCode = enrollment.Section.Course?.CourseCode ?? "",
                                         sectionName = enrollment.Section.SectionName,
                                         room = slot.Room != null ? $"{slot.Room.RoomNumber} ({slot.Room.Building})" : "TBD"
                                     }
