@@ -10,6 +10,7 @@ namespace StudentManagementSystem.BusinessLayer.Contracts
     public interface IOfficeHoursService
     {
         Task<List<ViewOfficeHoursDTO>> GetOfficeHoursByInstructorIdAsync(int instructorId);
-       
+        Task<ViewOfficeHoursDTO> CreateOfficeHours(CreateOfficeHoursDTO hoursDTO);
+
     }
 }

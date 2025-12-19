@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagementSystem.API.Common;
 using StudentManagementSystem.BusinessLayer.Contracts;
@@ -21,6 +22,13 @@ namespace StudentManagementSystem.API.Controllers
         {
             var response = await officeHoursService.GetOfficeHoursByInstructorIdAsync(id);
             return Ok(ApiResponse<List<ViewOfficeHoursDTO>>.SuccessResponse(response));
+        }
+        [Authorize(Roles ="Admin")]
+        [HttpPost]
+        public async Task<IActionResult> CreateOfficeHoursByAdmin(CreateOfficeHoursDTO officeHoursDTO) 
+        {
+            var response = await officeHoursService.CreateOfficeHours(officeHoursDTO);
+            return Ok(ApiResponse<ViewOfficeHoursDTO>.SuccessResponse(response));
         }
     }
 }
