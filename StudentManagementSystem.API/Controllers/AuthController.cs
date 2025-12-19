@@ -210,6 +210,8 @@ namespace StudentManagementSystem.API.Controllers
 
             var user = await userManager.Users
                 .Include(u => u.InstructorProfile)
+                .Include(u => u.StudentProfile)
+                    .ThenInclude(sp => sp.AcademicPlan)
                 .FirstOrDefaultAsync(u => u.Id == userId);
 
             if (user == null)
@@ -220,13 +222,45 @@ namespace StudentManagementSystem.API.Controllers
                 ));
             }
 
+            // Build response based on role
+            object profileData = null;
+            if (user.Role == "Student" && user.StudentProfile != null)
+            {
+                profileData = new
+                {
+                    StudentId = user.StudentProfile.StudentId,
+                    CompletedCredits = user.StudentProfile.CompletedCredits,
+                    RegisteredCredits = user.StudentProfile.RegisteredCredits,
+                    GPA = user.StudentProfile.GPA,
+                    FamilyContact = user.StudentProfile.FamilyContact,
+                    AcademicPlan = user.StudentProfile.AcademicPlan != null ? new
+                    {
+                        user.StudentProfile.AcademicPlan.AcademicPlanId,
+                        AcademicPlanName = user.StudentProfile.AcademicPlan.MajorName,
+                        TotalCreditHours = user.StudentProfile.AcademicPlan.TotalCreditsRequired
+                    } : null
+                };
+            }
+            else if (user.Role == "Instructor" && user.InstructorProfile != null)
+            {
+                profileData = new
+                {
+                    InstructorId = user.InstructorProfile.InstructorId,
+                    Title = user.InstructorProfile.Title,
+                    Degree = user.InstructorProfile.Degree.ToString(),
+                    Department = user.InstructorProfile.Department
+                };
+            }
+
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
                 user.Id,
                 user.FullName,
                 user.Email,
                 user.Role,
-                InstructorTitle = user.InstructorProfile?.Title
+                user.Address,
+                InstructorTitle = user.InstructorProfile?.Title,
+                Profile = profileData
             }));
         }
 
