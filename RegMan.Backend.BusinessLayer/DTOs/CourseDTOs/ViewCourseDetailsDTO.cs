@@ -1,0 +1,23 @@
+﻿using RegMan.Backend.DAL.Entities;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace RegMan.Backend.BusinessLayer.DTOs.CourseDTOs
+{
+    public class ViewCourseDetailsDTO
+    {
+        public int CourseId { get; set; }
+        public string CourseName { get; set; } = string.Empty;
+        public int CreditHours { get; set; }
+        //public int AvailableSeats { get; set; }
+        public string CourseCode { get; set; } = string.Empty;
+        public int CourseCategoryId { get; set; }
+        public string CourseCategoryName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+
+    }
+}

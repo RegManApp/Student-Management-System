@@ -1,0 +1,19 @@
+﻿using RegMan.Backend.BusinessLayer.DTOs.StudentDTOs;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace RegMan.Backend.BusinessLayer.Contracts
+{
+    public interface IStudentProfileService
+    {
+        Task<ViewStudentProfileDTO> CreateProfileAsync(CreateStudentDTO studentDTO);
+        Task<ViewStudentProfileDTO> GetProfileByIdAsync(int id);
+        Task<ViewStudentProfileDTO> GetProfileByIdAsync(string id);
+        Task<List<ViewStudentProfileDTO>> GetAllStudentsAsync(int? GPA, int? CompletedCredits, string? AcademicPlanId);
+        Task<ViewStudentProfileDTO> UpdateProfileAdminAsync(UpdateStudentProfileDTO studentDTO);
+        Task ChangeStudentPassword(ChangePasswordDTO passwordDTO);
+    }
+}

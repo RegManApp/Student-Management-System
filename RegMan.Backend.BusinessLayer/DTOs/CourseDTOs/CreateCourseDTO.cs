@@ -1,0 +1,27 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace RegMan.Backend.BusinessLayer.DTOs.CourseDTOs
+{
+    public class CreateCourseDTO
+    {
+        public string CourseName { get; set; } = string.Empty;
+        [Required]
+        [Range(1, 4)]
+        public int CreditHours { get; set; }
+        //[Required]
+        //[Range(30,60)]
+        //public int AvailableSeats { get; set; }
+        [Required]
+        [StringLength(7, MinimumLength = 4)]
+        public string CourseCode { get; set; } = string.Empty;
+        [Required]
+        public int CourseCategoryId { get; set; }
+        public string Description { get; set; } = string.Empty;
+
+    }
+}
