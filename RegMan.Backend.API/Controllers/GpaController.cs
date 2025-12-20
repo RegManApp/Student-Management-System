@@ -170,9 +170,10 @@ namespace RegMan.Backend.API.Controllers
             await unitOfWork.SaveChangesAsync();
 
             // Recalculate and update student's GPA
+            double? newGpa = null;
             if (enrollment.Student != null)
             {
-                await RecalculateStudentGPA(enrollment.Student.StudentId);
+                newGpa = await RecalculateStudentGPA(enrollment.Student.StudentId);
             }
 
             return Ok(ApiResponse<object>.SuccessResponse(new
@@ -180,11 +181,12 @@ namespace RegMan.Backend.API.Controllers
                 enrollment.EnrollmentId,
                 enrollment.Grade,
                 GradePoints = GradeHelper.GetGradePoints(dto.Grade),
-                Status = enrollment.Status.ToString()
+                Status = enrollment.Status.ToString(),
+                NewGpa = newGpa
             }, "Grade updated successfully"));
         }
 
-        private async Task RecalculateStudentGPA(int studentId)
+        private async Task<double?> RecalculateStudentGPA(int studentId)
         {
             var student = await unitOfWork.StudentProfiles
                 .GetAllAsQueryable()
@@ -193,7 +195,7 @@ namespace RegMan.Backend.API.Controllers
                         .ThenInclude(sec => sec!.Course)
                 .FirstOrDefaultAsync(s => s.StudentId == studentId);
 
-            if (student == null) return;
+            if (student == null) return null;
 
             var completedEnrollments = student.Enrollments
                 .Where(e => e.Grade != null && e.Section?.Course != null)
@@ -209,6 +211,7 @@ namespace RegMan.Backend.API.Controllers
                 .Sum(e => e.Section!.Course.CreditHours);
 
             await unitOfWork.SaveChangesAsync();
+            return student.GPA;
         }
 
         // POST: /api/gpa/simulate
