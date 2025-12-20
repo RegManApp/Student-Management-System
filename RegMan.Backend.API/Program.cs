@@ -191,7 +191,7 @@ namespace RegMan.Backend.API
                         Scheme = JwtBearerDefaults.AuthenticationScheme,
                         Description = "Enter JWT Bearer token only"
                     });
-                
+
                 options.CustomSchemaIds(type => type.FullName);
 
                 options.AddSecurityRequirement(new OpenApiSecurityRequirement
@@ -213,15 +213,17 @@ namespace RegMan.Backend.API
             var app = builder.Build();
 
             // ==================
-            // Seed Roles + Admin
+            // Seed Roles + Admin + Academic Plans
             // ==================
             using (var scope = app.Services.CreateScope())
             {
                 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
                 var userManager = scope.ServiceProvider.GetRequiredService<UserManager<BaseUser>>();
+                var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
 
                 await RoleSeeder.SeedRolesAsync(roleManager);
                 await UserSeeder.SeedAdminAsync(userManager);
+                await AcademicPlanSeeder.SeedDefaultAcademicPlanAsync(dbContext);
             }
 
             // ==================
@@ -237,7 +239,7 @@ namespace RegMan.Backend.API
 
             app.UseCors("AllowRegman");
 
-            app.UseHttpsRedirection();
+            // app.UseHttpsRedirection(); // Temporarily disabled for local testing
 
             app.UseAuthentication();
             app.UseAuthorization();

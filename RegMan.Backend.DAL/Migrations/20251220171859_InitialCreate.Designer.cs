@@ -12,8 +12,8 @@ using RegMan.Backend.DAL.DataContext;
 namespace RegMan.Backend.DAL.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251219011257_add_chatting")]
-    partial class add_chatting
+    [Migration("20251220171859_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -408,6 +408,37 @@ namespace RegMan.Backend.DAL.Migrations
                     b.ToTable("CartItems");
                 });
 
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.Conversation", b =>
+                {
+                    b.Property<int>("ConversationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConversationId"));
+
+                    b.Property<string>("ConversationName")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ConversationId");
+
+                    b.ToTable("Conversations");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.ConversationParticipant", b =>
+                {
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ConversationId", "UserId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ConversationParticipants");
+                });
+
             modelBuilder.Entity("RegMan.Backend.DAL.Entities.Course", b =>
                 {
                     b.Property<int>("CourseId")
@@ -447,8 +478,20 @@ namespace RegMan.Backend.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EnrollmentId"));
 
+                    b.Property<DateTime?>("ApprovedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ApprovedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("DeclineReason")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("EnrolledAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Grade")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("SectionId")
                         .HasColumnType("int");
@@ -478,6 +521,12 @@ namespace RegMan.Backend.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("InstructorId"));
 
+                    b.Property<int>("Degree")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Department")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -492,6 +541,199 @@ namespace RegMan.Backend.DAL.Migrations
                         .IsUnique();
 
                     b.ToTable("Instructors");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.Message", b =>
+                {
+                    b.Property<int>("MessageId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MessageId"));
+
+                    b.Property<int>("ConversationId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SenderId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("SentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TextMessage")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("MessageId");
+
+                    b.HasIndex("ConversationId");
+
+                    b.HasIndex("SenderId");
+
+                    b.ToTable("Messages");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.Notification", b =>
+                {
+                    b.Property<int>("NotificationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("NotificationId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int?>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime?>("ReadAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("NotificationId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Notifications");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.OfficeHour", b =>
+                {
+                    b.Property<int>("OfficeHourId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OfficeHourId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("Date")
+                        .HasColumnType("datetime2");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<int>("InstructorId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsRecurring")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("RecurringDay")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("RoomId")
+                        .IsRequired()
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("OfficeHourId");
+
+                    b.HasIndex("InstructorId");
+
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("OfficeHours");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.OfficeHourBooking", b =>
+                {
+                    b.Property<int>("BookingId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BookingId"));
+
+                    b.Property<DateTime>("BookedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CancelledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancelledBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("ConfirmedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("InstructorNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int>("OfficeHourId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Purpose")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("StudentId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("StudentNotes")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.HasKey("BookingId");
+
+                    b.HasIndex("StudentId");
+
+                    b.HasIndex("OfficeHourId", "StudentId")
+                        .IsUnique();
+
+                    b.ToTable("OfficeHourBookings");
                 });
 
             modelBuilder.Entity("RegMan.Backend.DAL.Entities.RefreshToken", b =>
@@ -607,6 +849,9 @@ namespace RegMan.Backend.DAL.Migrations
 
                     b.Property<int?>("InstructorId")
                         .HasColumnType("int");
+
+                    b.Property<string>("SectionName")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Semester")
                         .IsRequired()
@@ -842,7 +1087,7 @@ namespace RegMan.Backend.DAL.Migrations
                     b.HasOne("RegMan.Backend.DAL.Entities.ScheduleSlot", "ScheduleSlot")
                         .WithMany()
                         .HasForeignKey("ScheduleSlotId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Cart");
@@ -850,12 +1095,31 @@ namespace RegMan.Backend.DAL.Migrations
                     b.Navigation("ScheduleSlot");
                 });
 
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.ConversationParticipant", b =>
+                {
+                    b.HasOne("RegMan.Backend.DAL.Entities.Conversation", "Conversation")
+                        .WithMany("Participants")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RegMan.Backend.DAL.Entities.BaseUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("RegMan.Backend.DAL.Entities.Enrollment", b =>
                 {
                     b.HasOne("RegMan.Backend.DAL.Entities.Section", "Section")
                         .WithMany("Enrollments")
                         .HasForeignKey("SectionId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("RegMan.Backend.DAL.Entities.StudentProfile", "Student")
@@ -878,6 +1142,74 @@ namespace RegMan.Backend.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.Message", b =>
+                {
+                    b.HasOne("RegMan.Backend.DAL.Entities.Conversation", "Conversation")
+                        .WithMany("Messages")
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RegMan.Backend.DAL.Entities.BaseUser", "Sender")
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
+
+                    b.Navigation("Sender");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.Notification", b =>
+                {
+                    b.HasOne("RegMan.Backend.DAL.Entities.BaseUser", "User")
+                        .WithMany("Notifications")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.OfficeHour", b =>
+                {
+                    b.HasOne("RegMan.Backend.DAL.Entities.InstructorProfile", "Instructor")
+                        .WithMany("OfficeHours")
+                        .HasForeignKey("InstructorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RegMan.Backend.DAL.Entities.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Instructor");
+
+                    b.Navigation("Room");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.OfficeHourBooking", b =>
+                {
+                    b.HasOne("RegMan.Backend.DAL.Entities.OfficeHour", "OfficeHour")
+                        .WithMany("Bookings")
+                        .HasForeignKey("OfficeHourId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RegMan.Backend.DAL.Entities.StudentProfile", "Student")
+                        .WithMany("OfficeHourBookings")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OfficeHour");
+
+                    b.Navigation("Student");
                 });
 
             modelBuilder.Entity("RegMan.Backend.DAL.Entities.RefreshToken", b =>
@@ -1002,6 +1334,8 @@ namespace RegMan.Backend.DAL.Migrations
 
                     b.Navigation("InstructorProfile");
 
+                    b.Navigation("Notifications");
+
                     b.Navigation("RefreshTokens");
 
                     b.Navigation("StudentProfile");
@@ -1010,6 +1344,23 @@ namespace RegMan.Backend.DAL.Migrations
             modelBuilder.Entity("RegMan.Backend.DAL.Entities.Cart", b =>
                 {
                     b.Navigation("CartItems");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.Conversation", b =>
+                {
+                    b.Navigation("Messages");
+
+                    b.Navigation("Participants");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.InstructorProfile", b =>
+                {
+                    b.Navigation("OfficeHours");
+                });
+
+            modelBuilder.Entity("RegMan.Backend.DAL.Entities.OfficeHour", b =>
+                {
+                    b.Navigation("Bookings");
                 });
 
             modelBuilder.Entity("RegMan.Backend.DAL.Entities.Room", b =>
@@ -1030,6 +1381,8 @@ namespace RegMan.Backend.DAL.Migrations
                         .IsRequired();
 
                     b.Navigation("Enrollments");
+
+                    b.Navigation("OfficeHourBookings");
 
                     b.Navigation("Transcripts");
                 });

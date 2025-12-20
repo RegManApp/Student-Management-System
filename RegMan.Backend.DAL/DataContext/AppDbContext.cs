@@ -66,7 +66,7 @@ namespace RegMan.Backend.DAL.DataContext
                 .WithMany(ap => ap.Students)
                 .HasForeignKey(sp => sp.AcademicPlanId)
                 .OnDelete(DeleteBehavior.Restrict);
-                
+
             modelBuilder.Entity<ConversationParticipant>()
               .HasKey(cp => new { cp.ConversationId, cp.UserId });
 
@@ -93,17 +93,17 @@ namespace RegMan.Backend.DAL.DataContext
                 .HasOne(cp => cp.User)
                 .WithMany()
                 .HasForeignKey(cp => cp.UserId);
-        
-        // ============================
-        // 2. ONE-TO-MANY RELATIONSHIPS
-        // ============================
 
-        // Section → ScheduleSlot
-        modelBuilder.Entity<ScheduleSlot>()
-                .HasOne(ss => ss.Section)
-                .WithMany(s => s.Slots)
-                .HasForeignKey(ss => ss.SectionId)
-                .OnDelete(DeleteBehavior.Cascade);
+            // ============================
+            // 2. ONE-TO-MANY RELATIONSHIPS
+            // ============================
+
+            // Section → ScheduleSlot
+            modelBuilder.Entity<ScheduleSlot>()
+                    .HasOne(ss => ss.Section)
+                    .WithMany(s => s.Slots)
+                    .HasForeignKey(ss => ss.SectionId)
+                    .OnDelete(DeleteBehavior.Cascade);
 
             // Room → ScheduleSlot
             modelBuilder.Entity<ScheduleSlot>()
@@ -249,7 +249,7 @@ namespace RegMan.Backend.DAL.DataContext
                 .HasOne(ohb => ohb.Student)
                 .WithMany(s => s.OfficeHourBookings)
                 .HasForeignKey(ohb => ohb.StudentId)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.Restrict); // Changed from Cascade to Restrict to avoid multiple cascade paths
 
             modelBuilder.Entity<OfficeHour>()
                 .HasOne(oh => oh.Instructor)
