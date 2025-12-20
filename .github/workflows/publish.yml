@@ -15,27 +15,27 @@ jobs:
           dotnet-version: 8.0
 
       - name: Install dependencies
-        run: cd StudentManagementSystem.API && dotnet restore
+        run: cd RegMan.Backend.API && dotnet restore
 
       - name: Build
-        run: cd StudentManagementSystem.API && dotnet build --configuration Release --no-restore
+        run: cd RegMan.Backend.API && dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: cd StudentManagementSystem.API && dotnet publish --configuration Release --output ./publish --runtime win-x86 --self-contained false
+        run: cd RegMan.Backend.API && dotnet publish --configuration Release --output ./publish --runtime win-x86 --self-contained false
 
       - name: List published files
-        run: Get-ChildItem -Recurse "StudentManagementSystem.API/publish/" | Select-Object FullName
+        run: Get-ChildItem -Recurse "RegMan.Backend.API/publish/" | Select-Object FullName
         shell: pwsh
 
       - name: Update appsettings with connection string
         run: |
-          $appSettings = Get-Content "StudentManagementSystem.API/publish/appsettings.json" | ConvertFrom-Json
+          $appSettings = Get-Content "RegMan.Backend.API/publish/appsettings.json" | ConvertFrom-Json
           $appSettings.ConnectionStrings.DefaultConnection = "${{ secrets.CONNECTION_STRING }}"
-          $appSettings | ConvertTo-Json -Depth 10 | Set-Content "StudentManagementSystem.API/publish/appsettings.json"
+          $appSettings | ConvertTo-Json -Depth 10 | Set-Content "RegMan.Backend.API/publish/appsettings.json"
         shell: pwsh
 
       - name: Test with .NET
-        run: cd StudentManagementSystem.API && dotnet test
+        run: cd RegMan.Backend.API && dotnet test
 
       - name: Deploy to MonsterASP.NET via WebDeploy
         uses: rasmusbuchholdt/simply-web-deploy@2.1.0
@@ -44,4 +44,4 @@ jobs:
           server-computer-name: ${{ secrets.SERVER_COMPUTER_NAME }}
           server-username: ${{ secrets.SERVER_USERNAME }}
           server-password: ${{ secrets.SERVER_PASSWORD }}
-          source-path: 'StudentManagementSystem.API/publish/'
+          source-path: 'RegMan.Backend.API/publish/'
