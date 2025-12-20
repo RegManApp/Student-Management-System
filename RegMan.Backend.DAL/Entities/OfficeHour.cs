@@ -19,7 +19,7 @@ namespace RegMan.Backend.DAL.Entities
     {
         public int OfficeHourId { get; set; }
 
-        [Required]
+        // Optional room - office hours can be virtual
         public int? RoomId { get; set; }
 
         [Required]

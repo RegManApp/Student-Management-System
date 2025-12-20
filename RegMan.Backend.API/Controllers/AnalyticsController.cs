@@ -86,14 +86,14 @@ namespace RegMan.Backend.API.Controllers
         }
 
         // =========================
-        // Enrollment Trends (Last 30 days)
+        // Enrollment Trends (Last 30 days) - Chart Ready
         // =========================
         [HttpGet("enrollment-trends")]
         public async Task<IActionResult> GetEnrollmentTrends()
         {
             var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
 
-            var trends = await unitOfWork.Enrollments.GetAllAsQueryable()
+            var rawTrends = await unitOfWork.Enrollments.GetAllAsQueryable()
                 .Where(e => e.EnrolledAt >= thirtyDaysAgo)
                 .GroupBy(e => e.EnrolledAt.Date)
                 .Select(g => new
@@ -107,7 +107,23 @@ namespace RegMan.Backend.API.Controllers
                 .OrderBy(t => t.Date)
                 .ToListAsync();
 
-            return Ok(ApiResponse<object>.SuccessResponse(trends));
+            // Fill in missing dates with zero values for proper chart display
+            var chartData = new List<object>();
+            for (int i = 30; i >= 0; i--)
+            {
+                var date = DateTime.UtcNow.Date.AddDays(-i);
+                var existing = rawTrends.FirstOrDefault(t => t.Date == date);
+                chartData.Add(new
+                {
+                    Date = date.ToString("MMM dd"),
+                    Total = existing?.Count ?? 0,
+                    Pending = existing?.Pending ?? 0,
+                    Approved = existing?.Approved ?? 0,
+                    Declined = existing?.Declined ?? 0
+                });
+            }
+
+            return Ok(ApiResponse<object>.SuccessResponse(chartData));
         }
 
         // =========================
@@ -154,7 +170,7 @@ namespace RegMan.Backend.API.Controllers
         }
 
         // =========================
-        // GPA Distribution
+        // GPA Distribution - Chart Ready
         // =========================
         [HttpGet("gpa-distribution")]
         public async Task<IActionResult> GetGPADistribution()
@@ -165,21 +181,39 @@ namespace RegMan.Backend.API.Controllers
                 .Select(u => u.StudentProfile!.GPA)
                 .ToListAsync();
 
+            var excellent = students.Count(g => g >= 3.5);
+            var good = students.Count(g => g >= 3.0 && g < 3.5);
+            var average = students.Count(g => g >= 2.5 && g < 3.0);
+            var belowAverage = students.Count(g => g >= 2.0 && g < 2.5);
+            var atRisk = students.Count(g => g < 2.0);
+
             var distribution = new
             {
-                Excellent = students.Count(g => g >= 3.5),      // 3.5 - 4.0
-                Good = students.Count(g => g >= 3.0 && g < 3.5), // 3.0 - 3.49
-                Average = students.Count(g => g >= 2.5 && g < 3.0), // 2.5 - 2.99
-                BelowAverage = students.Count(g => g >= 2.0 && g < 2.5), // 2.0 - 2.49
-                AtRisk = students.Count(g => g < 2.0),           // < 2.0
-                AverageGPA = students.Any() ? Math.Round(students.Average(), 2) : 0
+                Summary = new
+                {
+                    Excellent = excellent,
+                    Good = good,
+                    Average = average,
+                    BelowAverage = belowAverage,
+                    AtRisk = atRisk,
+                    AverageGPA = students.Any() ? Math.Round(students.Average(), 2) : 0
+                },
+                // Chart-ready data
+                ChartData = new[]
+                {
+                    new { Name = "Excellent (≥3.5)", Value = excellent, Color = "#10B981" },
+                    new { Name = "Good (3.0-3.49)", Value = good, Color = "#3B82F6" },
+                    new { Name = "Average (2.5-2.99)", Value = average, Color = "#F59E0B" },
+                    new { Name = "Below Avg (2.0-2.49)", Value = belowAverage, Color = "#F97316" },
+                    new { Name = "At Risk (<2.0)", Value = atRisk, Color = "#EF4444" }
+                }
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(distribution));
         }
 
         // =========================
-        // Credits Distribution
+        // Credits Distribution - Chart Ready
         // =========================
         [HttpGet("credits-distribution")]
         public async Task<IActionResult> GetCreditsDistribution()
@@ -190,13 +224,29 @@ namespace RegMan.Backend.API.Controllers
                 .Select(u => u.StudentProfile!.CompletedCredits)
                 .ToListAsync();
 
+            var freshman = students.Count(c => c < 30);
+            var sophomore = students.Count(c => c >= 30 && c < 60);
+            var junior = students.Count(c => c >= 60 && c < 90);
+            var senior = students.Count(c => c >= 90);
+
             var distribution = new
             {
-                Freshman = students.Count(c => c < 30),      // 0-29 credits
-                Sophomore = students.Count(c => c >= 30 && c < 60), // 30-59 credits
-                Junior = students.Count(c => c >= 60 && c < 90),    // 60-89 credits
-                Senior = students.Count(c => c >= 90),              // 90+ credits
-                AverageCredits = students.Any() ? Math.Round(students.Average(), 1) : 0
+                Summary = new
+                {
+                    Freshman = freshman,
+                    Sophomore = sophomore,
+                    Junior = junior,
+                    Senior = senior,
+                    AverageCredits = students.Any() ? Math.Round(students.Average(), 1) : 0
+                },
+                // Chart-ready data
+                ChartData = new[]
+                {
+                    new { Name = "Freshman", Value = freshman, Range = "0-29 credits", Color = "#3B82F6" },
+                    new { Name = "Sophomore", Value = sophomore, Range = "30-59 credits", Color = "#10B981" },
+                    new { Name = "Junior", Value = junior, Range = "60-89 credits", Color = "#F59E0B" },
+                    new { Name = "Senior", Value = senior, Range = "90+ credits", Color = "#8B5CF6" }
+                }
             };
 
             return Ok(ApiResponse<object>.SuccessResponse(distribution));

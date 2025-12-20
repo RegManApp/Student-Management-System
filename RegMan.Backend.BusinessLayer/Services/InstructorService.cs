@@ -26,15 +26,14 @@ internal class InstructorService : IInstructorService
     // ======================
     public async Task<ViewInstructorDTO> CreateAsync(CreateInstructorDTO dto)
     {
-        if (string.IsNullOrWhiteSpace(dto.Title))
-            throw new Exception("Instructor title is required.");
+        var title = string.IsNullOrWhiteSpace(dto.Title) ? "Instructor" : dto.Title;
 
         var user = new BaseUser
         {
             UserName = dto.Email,
             Email = dto.Email,
             FullName = dto.FullName,
-            Address = "N/A",
+            Address = dto.Address ?? "N/A",
             Role = "Instructor"
         };
 
@@ -47,9 +46,9 @@ internal class InstructorService : IInstructorService
         var instructor = new InstructorProfile
         {
             UserId = user.Id,
-            Title = dto.Title,
-            Degree = InstructorDegree.Lecturer,
-            Department = "General"
+            Title = title,
+            Degree = dto.Degree ?? InstructorDegree.Lecturer,
+            Department = dto.Department ?? "General"
         };
 
         await unitOfWork.InstructorProfiles.AddAsync(instructor);
