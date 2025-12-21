@@ -9,9 +9,6 @@ jobs:
   build_and_deploy:
     runs-on: windows-latest
 
-    env:
-      ConnectionStrings__DefaultConnection: ${{ secrets.NEW_CONNECTION_STRING }}
-
     steps:
       # Checkout
       - uses: actions/checkout@v4
@@ -26,16 +23,16 @@ jobs:
       - name: Restore dependencies
         run: cd RegMan.Backend.API && dotnet restore
 
-      # Install EF Core CLI (VERSION PINNED)
+      # Install EF Core CLI (Pinned)
       - name: Install EF Core tools
         run: dotnet tool install --global dotnet-ef --version 8.*
 
       # Add dotnet tools to PATH
       - name: Add .NET tools to PATH
-        run: echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
         shell: pwsh
+        run: echo "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # Apply Database Migrations (FIRST TIME SAFE)
+      # Apply Database Migrations
       - name: Apply Database Migrations
         run: cd RegMan.Backend.API && dotnet ef database update --connection "${{ secrets.NEW_CONNECTION_STRING }}"
 
@@ -47,14 +44,35 @@ jobs:
       - name: Publish
         run: cd RegMan.Backend.API && dotnet publish --configuration Release --output ./publish --runtime win-x86 --self-contained false
 
-      # Update appsettings.json with Connection String
-      - name: Update appsettings.json
+      # Inject Connection String
+      - name: Inject Connection String
         shell: pwsh
         run: |
-          $appSettingsPath = "RegMan.Backend.API/publish/appsettings.json"
-          $appSettings = Get-Content $appSettingsPath | ConvertFrom-Json
-          $appSettings.ConnectionStrings.DefaultConnection = "${{ secrets.NEW_CONNECTION_STRING }}"
-          $appSettings | ConvertTo-Json -Depth 10 | Set-Content $appSettingsPath
+          $path = "RegMan.Backend.API/publish/appsettings.json"
+          $json = Get-Content $path | ConvertFrom-Json
+
+          if (-not $json.ConnectionStrings) {
+            $json | Add-Member -MemberType NoteProperty -Name ConnectionStrings -Value @{}
+          }
+
+          $json.ConnectionStrings.DefaultConnection = "${{ secrets.NEW_CONNECTION_STRING }}"
+          $json | ConvertTo-Json -Depth 10 | Set-Content $path
+
+      # Inject Admin Credentials (TEMP)
+      - name: Inject Admin Credentials
+        shell: pwsh
+        run: |
+          $path = "RegMan.Backend.API/publish/appsettings.json"
+          $json = Get-Content $path | ConvertFrom-Json
+
+          if (-not $json.Admin) {
+            $json | Add-Member -MemberType NoteProperty -Name Admin -Value @{}
+          }
+
+          $json.Admin.Email = "${{ secrets.ADMIN_EMAIL }}"
+          $json.Admin.Password = "${{ secrets.ADMIN_PASSWORD }}"
+
+          $json | ConvertTo-Json -Depth 10 | Set-Content $path
 
       # Deploy to MonsterASP.NET
       - name: Deploy to MonsterASP.NET via WebDeploy
