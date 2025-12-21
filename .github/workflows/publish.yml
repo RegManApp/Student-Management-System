@@ -1,70 +1,42 @@
 name: Build, publish and deploy to MonsterASP.NET
-
-on:
-  push:
-    branches:
-      - main
+on: [push]
 
 jobs:
   build_and_deploy:
-    env:
-      ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
-      ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
     runs-on: windows-latest
-
+    env:
+      ConnectionStrings__DefaultConnection: ${{ secrets.CONNECTION_STRING }}
     steps:
-      # Checkout
       - uses: actions/checkout@v4
 
-      # Setup .NET 8
       - name: Setup .NET 8
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: 8.0
 
-      # Restore
-      - name: Restore dependencies
+      - name: Install dependencies
         run: cd RegMan.Backend.API && dotnet restore
 
-      # Build
       - name: Build
         run: cd RegMan.Backend.API && dotnet build --configuration Release --no-restore
 
-      # Publish
       - name: Publish
         run: cd RegMan.Backend.API && dotnet publish --configuration Release --output ./publish --runtime win-x86 --self-contained false
 
-      # Inject Connection String
-      - name: Inject Connection String
+      - name: List published files
+        run: Get-ChildItem -Recurse "RegMan.Backend.API/publish/" | Select-Object FullName
         shell: pwsh
+
+      - name: Update appsettings with connection string
         run: |
-          $path = "RegMan.Backend.API/publish/appsettings.json"
-          $json = Get-Content $path | ConvertFrom-Json
-
-          if (-not $json.ConnectionStrings) {
-            $json | Add-Member -MemberType NoteProperty -Name ConnectionStrings -Value @{}
-          }
-
-          $json.ConnectionStrings.DefaultConnection = "${{ secrets.CONNECTION_STRING }}"
-          $json | ConvertTo-Json -Depth 10 | Set-Content $path
-
-      # Inject Admin Credentials (TEMP)
-      - name: Inject Admin Credentials
+          $appSettings = Get-Content "RegMan.Backend.API/publish/appsettings.json" | ConvertFrom-Json
+          $appSettings.ConnectionStrings.DefaultConnection = "${{ secrets.CONNECTION_STRING }}"
+          $appSettings | ConvertTo-Json -Depth 10 | Set-Content "RegMan.Backend.API/publish/appsettings.json"
         shell: pwsh
-        run: |
-          $path = "RegMan.Backend.API/publish/appsettings.json"
-          $json = Get-Content $path | ConvertFrom-Json
 
-          if (-not $json.Admin) {
-            $json | Add-Member -MemberType NoteProperty -Name Admin -Value @{}
-          }
+      - name: Test with .NET
+        run: cd RegMan.Backend.API && dotnet test
 
-          $json.Admin.Email = "${{ secrets.ADMIN_EMAIL }}"
-          $json.Admin.Password = "${{ secrets.ADMIN_PASSWORD }}"
-
-          $json | ConvertTo-Json -Depth 10 | Set-Content $path
-
-      # Deploy to MonsterASP.NET
       - name: Deploy to MonsterASP.NET via WebDeploy
         uses: rasmusbuchholdt/simply-web-deploy@2.1.0
         with:
@@ -72,4 +44,4 @@ jobs:
           server-computer-name: ${{ secrets.SERVER_COMPUTER_NAME }}
           server-username: ${{ secrets.SERVER_USERNAME }}
           server-password: ${{ secrets.SERVER_PASSWORD }}
-          source-path: "RegMan.Backend.API/publish/"
+          source-path: 'RegMan.Backend.API/publish/'
