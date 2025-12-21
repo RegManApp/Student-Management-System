@@ -20,6 +20,70 @@ namespace RegMan.Backend.API.Controllers
     [Route("api/admin")]
     public class AdminController : ControllerBase
     {
+        // =========================
+        // Withdraw Requests
+        // =========================
+        private static List<WithdrawRequestDTO> withdrawRequests = new();
+
+
+        [HttpPost("students/{studentId}/withdraw-request")]
+        public IActionResult SubmitWithdrawRequest(string studentId, [FromBody] WithdrawRequestDTO dto)
+        {
+            // Only allow during withdraw period
+            if (withdrawStartDate == null || withdrawEndDate == null)
+                return BadRequest(ApiResponse<string>.FailureResponse("Withdraw period not set", StatusCodes.Status400BadRequest));
+            var now = DateTime.UtcNow.Date;
+            if (now < withdrawStartDate.Value.Date || now > withdrawEndDate.Value.Date)
+                return BadRequest(ApiResponse<string>.FailureResponse("Not in withdraw period", StatusCodes.Status400BadRequest));
+            if (string.IsNullOrWhiteSpace(dto.Reason))
+                return BadRequest(ApiResponse<string>.FailureResponse("Reason required", StatusCodes.Status400BadRequest));
+            withdrawRequests.Add(new WithdrawRequestDTO
+            {
+                StudentId = studentId,
+                EnrollmentId = dto.EnrollmentId,
+                Reason = dto.Reason,
+                Status = "Pending",
+                SubmittedAt = DateTime.UtcNow
+            });
+            return Ok(ApiResponse<string>.SuccessResponse("Withdraw request submitted"));
+        }
+
+        [HttpGet("withdraw-requests")]
+        public IActionResult GetWithdrawRequests()
+        {
+            return Ok(ApiResponse<List<WithdrawRequestDTO>>.SuccessResponse(withdrawRequests));
+        }
+
+        [HttpPost("withdraw-requests/{requestId}/approve")]
+        public IActionResult ApproveWithdrawRequest(int requestId)
+        {
+            var req = withdrawRequests.FirstOrDefault(r => r.RequestId == requestId);
+            if (req == null) return NotFound(ApiResponse<string>.FailureResponse("Request not found", StatusCodes.Status404NotFound));
+            req.Status = "Approved";
+            // TODO: Drop enrollment in DB
+            return Ok(ApiResponse<string>.SuccessResponse("Withdraw request approved"));
+        }
+
+        [HttpPost("withdraw-requests/{requestId}/deny")]
+        public IActionResult DenyWithdrawRequest(int requestId)
+        {
+            var req = withdrawRequests.FirstOrDefault(r => r.RequestId == requestId);
+            if (req == null) return NotFound(ApiResponse<string>.FailureResponse("Request not found", StatusCodes.Status404NotFound));
+            req.Status = "Denied";
+            return Ok(ApiResponse<string>.SuccessResponse("Withdraw request denied"));
+        }
+
+        public class WithdrawRequestDTO
+        {
+            private static int _nextId = 1;
+            public WithdrawRequestDTO() { RequestId = _nextId++; }
+            public int RequestId { get; set; }
+            public string StudentId { get; set; } = "";
+            public int EnrollmentId { get; set; }
+            public string Reason { get; set; } = "";
+            public string Status { get; set; } = "Pending";
+            public DateTime SubmittedAt { get; set; }
+        }
         private readonly UserManager<BaseUser> userManager;
         private readonly RoleManager<IdentityRole> roleManager;
         private readonly IAuditLogService auditLogService;
@@ -46,6 +110,45 @@ namespace RegMan.Backend.API.Controllers
         }
 
         // =========================
+        // Registration End Date (GET/SET)
+        // =========================
+        private static DateTime? registrationEndDate = null;
+        private static DateTime? withdrawStartDate = null;
+        private static DateTime? withdrawEndDate = null;
+
+        [HttpGet("registration-end-date")]
+        public IActionResult GetRegistrationEndDate()
+        {
+            return Ok(ApiResponse<object>.SuccessResponse(new
+            {
+                registrationEndDate = registrationEndDate?.ToString("yyyy-MM-dd") ?? "",
+                withdrawStartDate = withdrawStartDate?.ToString("yyyy-MM-dd") ?? "",
+                withdrawEndDate = withdrawEndDate?.ToString("yyyy-MM-dd") ?? ""
+            }));
+        }
+
+        [HttpPost("registration-end-date")]
+        public IActionResult SetRegistrationEndDate([FromBody] RegistrationEndDateDTO dto)
+        {
+            if (DateTime.TryParse(dto.RegistrationEndDate, out var regDate))
+            {
+                registrationEndDate = regDate;
+                // Withdraw starts at registration end
+                if (DateTime.TryParse(dto.WithdrawEndDate, out var withdrawEnd))
+                {
+                    withdrawStartDate = regDate;
+                    withdrawEndDate = withdrawEnd;
+                }
+                return Ok(ApiResponse<string>.SuccessResponse("Registration and withdraw dates updated"));
+            }
+            return BadRequest(ApiResponse<string>.FailureResponse("Invalid date format", StatusCodes.Status400BadRequest));
+        }
+
+        public class RegistrationEndDateDTO
+        {
+            public string RegistrationEndDate { get; set; } = "";
+            public string WithdrawEndDate { get; set; } = "";
+        }
         // Helper: Admin Info
         // =========================
         private (string adminId, string adminEmail) GetAdminInfo()
