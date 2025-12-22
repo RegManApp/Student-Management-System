@@ -43,7 +43,7 @@ namespace RegMan.Backend.API.Middleware
             }
             catch (DbUpdateException ex)
             {
-                // Most common judge-facing issue: unique constraint violations.
+                // Common cause: unique constraint violations.
                 var traceId = context.TraceIdentifier;
                 _logger.LogWarning(ex, "Database update exception. TraceId={TraceId}", traceId);
 
