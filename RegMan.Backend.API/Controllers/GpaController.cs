@@ -221,13 +221,21 @@ namespace RegMan.Backend.API.Controllers
         [HttpPost("simulate")]
         public async Task<IActionResult> SimulateGPAAsync([FromBody] SimulateGpaRequestDTO dto)
         {
+            if (dto == null)
+                return BadRequest(ApiResponse<string>.FailureResponse("StudentId is required.", 400));
+
             int? studentId = dto.StudentId;
 
+            // Admin (and other non-student roles) must explicitly provide StudentId
             if (!studentId.HasValue)
             {
+                if (User.IsInRole("Admin") || User.IsInRole("Instructor"))
+                    return BadRequest(ApiResponse<string>.FailureResponse("StudentId is required.", 400));
+
+                // Student flow: resolve from auth context
                 var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrWhiteSpace(userId))
-                    return BadRequest(ApiResponse<string>.FailureResponse("User not found.", 400));
+                    return BadRequest(ApiResponse<string>.FailureResponse("StudentId is required.", 400));
 
                 var student = await unitOfWork.StudentProfiles
                     .GetAllAsQueryable()
