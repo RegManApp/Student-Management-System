@@ -6,6 +6,8 @@ namespace RegMan.Backend.DAL.Entities
 {
     public class BaseUser : IdentityUser
     {
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
         [Required]
         [StringLength(100, MinimumLength = 2)]
         public string FullName { get; set; } = null!;
