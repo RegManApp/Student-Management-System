@@ -22,9 +22,20 @@ namespace RegMan.Backend.DAL.DataContext
                 .Build();
 
             var optionsBuilder = new DbContextOptionsBuilder<AppDbContext>();
-            optionsBuilder.UseSqlServer(
-                configuration.GetConnectionString("DefaultConnection")
-            );
+
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                connectionString = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+            }
+
+            // Design-time migrations don't need a real DB connection, but the provider needs a non-empty string.
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                connectionString = "Server=(localdb)\\mssqllocaldb;Database=RegMan.DesignTime;Trusted_Connection=True;MultipleActiveResultSets=true";
+            }
+
+            optionsBuilder.UseSqlServer(connectionString);
 
             return new AppDbContext(optionsBuilder.Options);
         }
