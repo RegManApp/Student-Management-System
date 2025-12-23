@@ -25,6 +25,69 @@ namespace RegMan.Backend.BusinessLayer.Services
             this.courseService = courseService;
         }
 
+        private IQueryable<Section> BuildEntityQuery()
+        {
+            return sectionRepository
+                .GetAllAsQueryable()
+                .Include(s => s.Course)
+                .Include(s => s.Instructor!)
+                    .ThenInclude(i => i.User)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.Room)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.TimeSlot)
+                .Include(s => s.Slots)
+                    .ThenInclude(sl => sl.Instructor!)
+                        .ThenInclude(i => i.User)
+                .AsNoTracking();
+        }
+
+        private static ViewSectionDTO MapToViewDTOListSafe(Section s)
+        {
+            return new ViewSectionDTO
+            {
+                SectionId = s.SectionId,
+                Semester = s.Semester,
+                Year = s.Year,
+                InstructorId = s.InstructorId,
+                InstructorName = s.Instructor?.User?.FullName,
+                AvailableSeats = s.AvailableSeats,
+
+                CourseSummary = new ViewCourseSummaryDTO
+                {
+                    CourseId = s.Course.CourseId,
+                    CourseName = s.Course.CourseName,
+                    CourseCode = s.Course.CourseCode,
+                    CreditHours = s.Course.CreditHours,
+                    CourseCategoryId = (int)s.Course.CourseCategory,
+                    Description = s.Course.Description
+                },
+
+                ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
+                {
+                    ScheduleSlotId = slot.ScheduleSlotId,
+                    SectionId = slot.SectionId,
+                    SectionName = (s.Course.CourseName ?? string.Empty) + " - Section " + s.SectionId,
+
+                    RoomId = slot.RoomId,
+                    Room = slot.Room != null
+                        ? (slot.Room.Building + " - " + slot.Room.RoomNumber)
+                        : string.Empty,
+
+                    TimeSlotId = slot.TimeSlotId,
+                    TimeSlot = slot.TimeSlot != null
+                        ? (slot.TimeSlot.Day.ToString() + " " +
+                           slot.TimeSlot.StartTime.ToString(@"hh\:mm") + "-" +
+                           slot.TimeSlot.EndTime.ToString(@"hh\:mm"))
+                        : string.Empty,
+
+                    InstructorId = slot.InstructorId,
+                    InstructorName = slot.Instructor?.User?.FullName ?? string.Empty,
+                    SlotType = slot.SlotType.ToString()
+                }).ToList()
+            };
+        }
+
         // =========================
         // Create
         // =========================
@@ -121,13 +184,13 @@ namespace RegMan.Backend.BusinessLayer.Services
         // =========================
         public async Task<ViewSectionDTO> GetSectionByIdAsync(int id)
         {
-            var section = await BuildBaseQuery()
+            var section = await BuildEntityQuery()
                 .FirstOrDefaultAsync(s => s.SectionId == id);
 
             if (section == null)
                 throw new Exception($"Section with ID {id} not found");
 
-            return section;
+            return MapToViewDTOListSafe(section);
         }
 
         // =========================
@@ -140,23 +203,7 @@ namespace RegMan.Backend.BusinessLayer.Services
             int? courseId,
             int? seats)
         {
-            var query = sectionRepository
-                .GetAllAsQueryable()
-                .Include(s => s.Course)
-                .Include(s => s.Instructor!)
-                    .ThenInclude(i => i.User)
-                .Include(s => s.Slots)
-                    .ThenInclude(sl => sl.Room)
-                .Include(s => s.Slots)
-                    .ThenInclude(sl => sl.TimeSlot)
-                .Include(s => s.Slots)
-                    .ThenInclude(sl => sl.Instructor!)
-                        .ThenInclude(i => i.User)
-                .AsQueryable();
-
-            // Guard against inconsistent data (orphaned sections). Keeping the list endpoint resilient
-            // prevents admin forms from failing to load due to a single bad row.
-            query = query.Where(s => s.Course != null);
+            var query = BuildEntityQuery().AsQueryable();
 
             if (!string.IsNullOrEmpty(semester))
                 query = query.Where(s => s.Semester == semester);
@@ -173,54 +220,8 @@ namespace RegMan.Backend.BusinessLayer.Services
             if (seats.HasValue)
                 query = query.Where(s => s.AvailableSeats == seats.Value);
 
-            return await query
-                .Select(s => new ViewSectionDTO
-                {
-                    SectionId = s.SectionId,
-                    Semester = s.Semester,
-                    Year = s.Year,
-                    InstructorId = s.InstructorId,
-                    InstructorName = s.Instructor != null
-                        ? s.Instructor.User.FullName
-                        : null,
-                    AvailableSeats = s.AvailableSeats,
-
-                    CourseSummary = new ViewCourseSummaryDTO
-                    {
-                        CourseId = s.Course.CourseId,
-                        CourseName = s.Course.CourseName,
-                        CourseCode = s.Course.CourseCode,
-                        CreditHours = s.Course.CreditHours,
-                        CourseCategoryId = (int)s.Course.CourseCategory,
-                        Description = s.Course.Description
-                    },
-
-                    ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
-                    {
-                        ScheduleSlotId = slot.ScheduleSlotId,
-                        SectionId = slot.SectionId,
-                        SectionName = (s.Course.CourseName ?? string.Empty) + " - Section " + s.SectionId,
-
-                        RoomId = slot.RoomId,
-                        Room = slot.Room != null
-                            ? (slot.Room.Building + " - " + slot.Room.RoomNumber)
-                            : string.Empty,
-
-                        TimeSlotId = slot.TimeSlotId,
-                        TimeSlot = slot.TimeSlot != null
-                            ? (slot.TimeSlot.Day.ToString() + " " +
-                               slot.TimeSlot.StartTime.ToString(@"hh\:mm") + "-" +
-                               slot.TimeSlot.EndTime.ToString(@"hh\:mm"))
-                            : string.Empty,
-
-                        InstructorId = slot.InstructorId,
-                        InstructorName = slot.Instructor != null
-                            ? slot.Instructor.User.FullName
-                            : string.Empty,
-                        SlotType = slot.SlotType.ToString()
-                    }).ToList()
-                })
-                .ToListAsync();
+            var sections = await query.ToListAsync();
+            return sections.Select(MapToViewDTOListSafe).ToList();
         }
 
         // =========================
