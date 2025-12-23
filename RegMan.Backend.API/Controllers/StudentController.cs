@@ -63,6 +63,11 @@ namespace RegMan.Backend.API.Controllers
         [HttpPut]
         public async Task<IActionResult> ChangeStudentPassword(ChangePasswordDTO passwordDTO)
         {
+            // Never trust client-provided email for password changes
+            var email = User.FindFirstValue(ClaimTypes.Email);
+            if (!string.IsNullOrWhiteSpace(email))
+                passwordDTO.Email = email;
+
             await studentProfileService.ChangeStudentPassword(passwordDTO);
             return Ok(ApiResponse<string>.SuccessResponse("Password changed successfully!"));
         }
