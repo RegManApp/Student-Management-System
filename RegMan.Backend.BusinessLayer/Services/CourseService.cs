@@ -152,7 +152,9 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseId = c.CourseId,
                     CourseName = c.CourseName,
                     CreditHours = c.CreditHours,
-                    CourseCode = c.CourseCode
+                    CourseCode = c.CourseCode,
+                    CourseCategoryId = (int)c.CourseCategory,
+                    Description = c.Description
                 })
                 .ToListAsync();
         }
@@ -205,7 +207,9 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseId = c.CourseId,
                     CourseName = c.CourseName,
                     CreditHours = c.CreditHours,
-                    CourseCode = c.CourseCode
+                    CourseCode = c.CourseCode,
+                    CourseCategoryId = (int)c.CourseCategory,
+                    Description = c.Description
                 })
                 .ToListAsync();
 
@@ -225,7 +229,9 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseId = c.CourseId,
                     CourseName = c.CourseName,
                     CreditHours = c.CreditHours,
-                    CourseCode = c.CourseCode
+                    CourseCode = c.CourseCode,
+                    CourseCategoryId = (int)c.CourseCategory,
+                    Description = c.Description
                 };
 
             var query = courseRepository.GetFilteredAndProjected(filter, projection);

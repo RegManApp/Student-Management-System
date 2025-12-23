@@ -186,7 +186,9 @@ namespace RegMan.Backend.BusinessLayer.Services
                         CourseId = s.Course.CourseId,
                         CourseName = s.Course.CourseName,
                         CourseCode = s.Course.CourseCode,
-                        CreditHours = s.Course.CreditHours
+                        CreditHours = s.Course.CreditHours,
+                        CourseCategoryId = (int)s.Course.CourseCategory,
+                        Description = s.Course.Description
                     },
 
                     ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
@@ -276,7 +278,9 @@ namespace RegMan.Backend.BusinessLayer.Services
                         CourseId = s.Course.CourseId,
                         CourseName = s.Course.CourseName,
                         CourseCode = s.Course.CourseCode,
-                        CreditHours = s.Course.CreditHours
+                        CreditHours = s.Course.CreditHours,
+                        CourseCategoryId = (int)s.Course.CourseCategory,
+                        Description = s.Course.Description
                     },
 
                     ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO
@@ -319,7 +323,9 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseId = s.Course.CourseId,
                     CourseName = s.Course.CourseName,
                     CourseCode = s.Course.CourseCode,
-                    CreditHours = s.Course.CreditHours
+                    CreditHours = s.Course.CreditHours,
+                    CourseCategoryId = (int)s.Course.CourseCategory,
+                    Description = s.Course.Description
                 },
 
                 ScheduleSlots = s.Slots.Select(slot => new ViewScheduleSlotDTO

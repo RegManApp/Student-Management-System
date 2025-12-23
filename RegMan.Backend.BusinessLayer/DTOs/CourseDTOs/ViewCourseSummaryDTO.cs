@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using RegMan.Backend.DAL.Entities;
 
 namespace RegMan.Backend.BusinessLayer.DTOs.CourseDTOs
 {
@@ -13,5 +8,10 @@ namespace RegMan.Backend.BusinessLayer.DTOs.CourseDTOs
         public string CourseName { get; set; } = string.Empty;
         public int CreditHours { get; set; }
         public string CourseCode { get; set; } = string.Empty;
+
+        public int CourseCategoryId { get; set; }
+        public string CourseCategoryName => ((CourseCategory)CourseCategoryId).ToString();
+
+        public string? Description { get; set; }
     }
 }
