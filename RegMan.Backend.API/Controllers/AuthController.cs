@@ -296,6 +296,8 @@ namespace RegMan.Backend.API.Controllers
             {
                 user.Id,
                 user.FullName,
+                FirstName = (user.FullName ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty,
+                LastName = string.Join(' ', (user.FullName ?? string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries).Skip(1)),
                 user.Email,
                 user.Role,
                 user.Address,
