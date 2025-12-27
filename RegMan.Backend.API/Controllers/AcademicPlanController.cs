@@ -186,10 +186,18 @@ namespace RegMan.Backend.API.Controllers
         [Authorize(Roles = "Admin")]
         [HttpPost("assign-student")]
         public async Task<IActionResult> AssignStudentToAcademicPlanAsync(
-            [FromQuery] int studentId,
-            [FromQuery] string academicPlanId)
+            [FromBody] AssignStudentToAcademicPlanDTO? dto,
+            [FromQuery] int? studentId,
+            [FromQuery] string? academicPlanId)
         {
-            await academicPlanService.AssignStudentToAcademicPlanAsync(studentId, academicPlanId);
+            // Support both JSON body and query-string payloads.
+            var resolvedStudentId = dto?.StudentId ?? studentId;
+            var resolvedPlanId = dto?.AcademicPlanId ?? academicPlanId;
+
+            if (!resolvedStudentId.HasValue || string.IsNullOrWhiteSpace(resolvedPlanId))
+                return BadRequest(ApiResponse<string>.FailureResponse("Validation failed", StatusCodes.Status400BadRequest));
+
+            await academicPlanService.AssignStudentToAcademicPlanAsync(resolvedStudentId.Value, resolvedPlanId);
 
             return Ok(
                 ApiResponse<string>

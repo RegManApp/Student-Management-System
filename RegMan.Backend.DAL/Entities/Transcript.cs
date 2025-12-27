@@ -46,9 +46,26 @@ namespace RegMan.Backend.DAL.Entities
 
     public static class GradeHelper
     {
+        private static readonly HashSet<string> GpaGrades = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "F"
+        };
+
+        private static readonly HashSet<string> RecognizedNonGpaGrades = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "W",   // Withdraw
+            "P",   // Pass (non-GPA)
+            "NP",  // No Pass (non-GPA)
+            "TR",  // Transfer credit
+            "T"    // Transfer credit (alt)
+        };
+
         public static double GetGradePoints(string grade)
         {
-            return grade.ToUpper() switch
+            if (!CountsTowardGpa(grade))
+                return 0.0;
+
+            return grade.ToUpperInvariant() switch
             {
                 "A" => 4.0,
                 "A-" => 3.7,
@@ -67,13 +84,55 @@ namespace RegMan.Backend.DAL.Entities
 
         public static bool IsValidGrade(string grade)
         {
-            var validGrades = new[] { "A", "A-", "B+", "B", "B-", "C+", "C", "C-", "D+", "D", "F" };
-            return validGrades.Contains(grade.ToUpper());
+            return GpaGrades.Contains(grade.Trim());
+        }
+
+        public static bool IsRecognizedGrade(string grade)
+        {
+            if (string.IsNullOrWhiteSpace(grade))
+                return false;
+
+            var normalized = grade.Trim();
+            return GpaGrades.Contains(normalized) || RecognizedNonGpaGrades.Contains(normalized);
+        }
+
+        public static bool CountsTowardGpa(string grade)
+        {
+            if (string.IsNullOrWhiteSpace(grade))
+                return false;
+
+            return GpaGrades.Contains(grade.Trim());
+        }
+
+        public static bool IsTransferCredit(string grade)
+        {
+            if (string.IsNullOrWhiteSpace(grade))
+                return false;
+
+            var normalized = grade.Trim();
+            return string.Equals(normalized, "TR", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(normalized, "T", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool IsPassing(string grade)
         {
-            return GetGradePoints(grade) >= 1.0; // D or above
+            if (string.IsNullOrWhiteSpace(grade))
+                return false;
+
+            var normalized = grade.Trim();
+
+            // Non-GPA grades
+            if (string.Equals(normalized, "W", StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (string.Equals(normalized, "NP", StringComparison.OrdinalIgnoreCase))
+                return false;
+            if (string.Equals(normalized, "P", StringComparison.OrdinalIgnoreCase))
+                return true;
+            if (IsTransferCredit(normalized))
+                return true;
+
+            // GPA grades
+            return GetGradePoints(normalized) >= 1.0; // D or above
         }
     }
 }

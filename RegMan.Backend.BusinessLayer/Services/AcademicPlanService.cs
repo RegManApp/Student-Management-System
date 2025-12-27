@@ -140,18 +140,8 @@ namespace RegMan.Backend.BusinessLayer.Services
                 await unitOfWork.AcademicPlanCourses.DeleteAsync(course.AcademicPlanCourseId);
             }
 
-            // Now delete the plan - we need to get it by string ID
-            var planToDelete = await unitOfWork.AcademicPlans
-                .GetAllAsQueryable()
-                .FirstOrDefaultAsync(ap => ap.AcademicPlanId == academicPlanId);
-
-            if (planToDelete != null)
-            {
-                // Manual removal since DeleteAsync uses int id
-                var context = unitOfWork.AcademicPlans.GetAllAsQueryable();
-                // We'll use a workaround - update then save
-            }
-
+            // Delete the plan itself (string PK) using the EF DbContext
+            unitOfWork.Context.Remove(academicPlan);
             await unitOfWork.SaveChangesAsync();
 
             // Audit log
@@ -384,8 +374,20 @@ namespace RegMan.Backend.BusinessLayer.Services
         private StudentAcademicProgressDTO BuildStudentAcademicProgress(StudentProfile student)
         {
             var planCourses = student.AcademicPlan?.AcademicPlanCourses?.ToList() ?? new List<AcademicPlanCourse>();
-            var completedTranscripts = student.Transcripts.Where(t => GradeHelper.IsPassing(t.Grade)).ToList();
-            var completedCourseIds = completedTranscripts.Select(t => t.CourseId).ToHashSet();
+            var transcriptAttempts = (student.Transcripts ?? new HashSet<Transcript>()).ToList();
+
+            // Pick the latest transcript attempt per course for display/status
+            var latestTranscriptByCourseId = transcriptAttempts
+                .Where(t => !string.IsNullOrWhiteSpace(t.Grade) && GradeHelper.IsRecognizedGrade(t.Grade))
+                .GroupBy(t => t.CourseId)
+                .Select(g => g.OrderByDescending(x => x.CompletedAt).First())
+                .ToDictionary(t => t.CourseId, t => t);
+
+            // For degree progress, treat a course as completed if it has a passing grade
+            var passedCourseIds = latestTranscriptByCourseId
+                .Where(kvp => GradeHelper.IsPassing(kvp.Value.Grade))
+                .Select(kvp => kvp.Key)
+                .ToHashSet();
 
             // Get currently enrolled courses (in progress)
             var inProgressCourseIds = student.Enrollments
@@ -411,35 +413,42 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseType = planCourse.CourseType.ToString()
                 };
 
-                if (completedCourseIds.Contains(planCourse.CourseId))
+                if (latestTranscriptByCourseId.TryGetValue(planCourse.CourseId, out var latestTranscript))
                 {
-                    var transcript = completedTranscripts.First(t => t.CourseId == planCourse.CourseId);
-                    courseProgress.Grade = transcript.Grade;
-                    courseProgress.Status = "Completed";
+                    courseProgress.Grade = latestTranscript.Grade;
+                    courseProgress.Status = "COMPLETED";
+                    courseProgress.IsPassed = GradeHelper.IsPassing(latestTranscript.Grade);
                     completedCourses.Add(courseProgress);
                 }
                 else if (inProgressCourseIds.Contains(planCourse.CourseId))
                 {
-                    courseProgress.Status = "InProgress";
+                    courseProgress.Status = "IN_PROGRESS";
+                    courseProgress.IsPassed = null;
                     inProgressCourses.Add(courseProgress);
                 }
                 else
                 {
-                    courseProgress.Status = "NotStarted";
+                    courseProgress.Status = "PLANNED";
+                    courseProgress.IsPassed = null;
                     remainingCourses.Add(courseProgress);
                 }
             }
 
-            int creditsCompleted = completedCourses.Sum(c => c.CreditHours);
+            // Earned credits: only passing transcript courses count
+            int creditsCompleted = planCourses
+                .Where(pc => passedCourseIds.Contains(pc.CourseId))
+                .Select(pc => pc.Course.CreditHours)
+                .Sum();
+
             int totalRequired = student.AcademicPlan?.TotalCreditsRequired ?? 0;
             int creditsRemaining = Math.Max(0, totalRequired - creditsCompleted);
 
             // Course counts
             var requiredPlanCourseIds = planCourses.Where(pc => pc.IsRequired).Select(pc => pc.CourseId).ToHashSet();
             var requiredCoursesCount = requiredPlanCourseIds.Count;
-            var requiredCoursesCompletedCount = requiredPlanCourseIds.Count(id => completedCourseIds.Contains(id));
+            var requiredCoursesCompletedCount = requiredPlanCourseIds.Count(id => passedCourseIds.Contains(id));
             var totalPlanCoursesCount = planCourses.Count;
-            var planCoursesCompletedCount = planCourses.Count(pc => completedCourseIds.Contains(pc.CourseId));
+            var planCoursesCompletedCount = planCourses.Count(pc => passedCourseIds.Contains(pc.CourseId));
 
             // Missing prerequisites warnings (plan ordering proxy)
             // If a student is taking a later (recommended) course while earlier required plan courses are not yet completed,
@@ -463,7 +472,7 @@ namespace RegMan.Backend.BusinessLayer.Services
                     .Where(pc =>
                         pc.RecommendedYear < courseYear ||
                         (pc.RecommendedYear == courseYear && pc.RecommendedSemester < courseSemester))
-                    .Where(pc => !completedCourseIds.Contains(pc.CourseId))
+                    .Where(pc => !passedCourseIds.Contains(pc.CourseId))
                     .Select(pc => pc.Course.CourseCode)
                     .Distinct()
                     .OrderBy(code => code)
@@ -486,17 +495,26 @@ namespace RegMan.Backend.BusinessLayer.Services
             int expectedYears = student.AcademicPlan?.ExpectedYearsToComplete ?? 4;
             int expectedGraduationYear = currentYear + (int)Math.Ceiling((double)creditsRemaining / 30); // Assume ~30 credits/year
 
+            // Compute GPA from transcript attempts (ignore in-progress/withdrawn)
+            var gpaCredits = latestTranscriptByCourseId
+                .Where(kvp => GradeHelper.CountsTowardGpa(kvp.Value.Grade))
+                .Sum(kvp => kvp.Value.CreditHours);
+            var qualityPoints = latestTranscriptByCourseId
+                .Where(kvp => GradeHelper.CountsTowardGpa(kvp.Value.Grade))
+                .Sum(kvp => kvp.Value.GradePoints * kvp.Value.CreditHours);
+            var currentGpa = gpaCredits > 0 ? Math.Round(qualityPoints / gpaCredits, 2) : 0.0;
+
             return new StudentAcademicProgressDTO
             {
                 StudentId = student.StudentId,
                 StudentName = student.User.FullName,
                 AcademicPlanId = student.AcademicPlanId,
-                MajorName = student.AcademicPlan?.MajorName ?? "Not Assigned",
+                MajorName = student.AcademicPlan?.MajorName ?? string.Empty,
                 TotalCreditsRequired = totalRequired,
                 CreditsCompleted = creditsCompleted,
                 CreditsRemaining = creditsRemaining,
                 ProgressPercentage = totalRequired > 0 ? Math.Round((double)creditsCompleted / totalRequired * 100, 2) : 0,
-                CurrentGPA = student.GPA,
+                CurrentGPA = currentGpa,
                 ExpectedGraduationYear = expectedGraduationYear,
                 RequiredCoursesCount = requiredCoursesCount,
                 RequiredCoursesCompletedCount = requiredCoursesCompletedCount,

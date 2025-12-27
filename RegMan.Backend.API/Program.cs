@@ -11,6 +11,7 @@ using RegMan.Backend.API.Seeders;
 using RegMan.Backend.API.Services;
 using RegMan.Backend.BusinessLayer;
 using RegMan.Backend.BusinessLayer.Contracts;
+using RegMan.Backend.BusinessLayer.Helpers;
 using RegMan.Backend.BusinessLayer.Services;
 using RegMan.Backend.DAL;
 using RegMan.Backend.DAL.DataContext;
@@ -66,6 +67,9 @@ namespace RegMan.Backend.API
             // =========================
             builder.Services.AddDataBaseLayer(builder.Configuration);
             builder.Services.AddBusinessServices();
+
+            // Institution metadata (used in transcript headers)
+            builder.Services.Configure<InstitutionSettings>(builder.Configuration.GetSection("Institution"));
 
             // ==================
             // HttpContext Accessor (IMPORTANT for Audit Logs)

@@ -47,6 +47,8 @@ namespace RegMan.Backend.BusinessLayer.DTOs.AcademicPlanDTOs
         public bool IsRequired { get; set; }
         public string CourseType { get; set; } = string.Empty;
         public string? Grade { get; set; }
-        public string Status { get; set; } = string.Empty; // Completed, InProgress, NotStarted
+        // Status codes: COMPLETED, IN_PROGRESS, PLANNED
+        public string Status { get; set; } = string.Empty;
+        public bool? IsPassed { get; set; }
     }
 }

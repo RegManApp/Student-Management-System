@@ -125,6 +125,23 @@ namespace RegMan.Backend.API.Controllers
         }
 
         // =========================
+        // Search Students (Admin)
+        // =========================
+        [Authorize(Roles = "Admin")]
+        [HttpGet("students/search")]
+        public async Task<IActionResult> SearchStudentsAsync(
+            [FromQuery] string query,
+            [FromQuery] int take = 10)
+        {
+            var results = await transcriptService.SearchStudentsAsync(query, take);
+
+            return Ok(
+                ApiResponse<IEnumerable<StudentLookupDTO>>
+                    .SuccessResponse(results)
+            );
+        }
+
+        // =========================
         // Create Transcript (Admin/Instructor)
         // =========================
         [Authorize(Roles = "Admin,Instructor")]

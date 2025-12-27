@@ -18,11 +18,86 @@ namespace RegMan.Backend.API.Controllers
     {
         private readonly IEnrollmentService enrollmentService;
         private readonly IUnitOfWork unitOfWork;
+        private readonly ITranscriptService transcriptService;
 
-        public EnrollmentController(IEnrollmentService enrollmentService, IUnitOfWork unitOfWork)
+        public EnrollmentController(IEnrollmentService enrollmentService, IUnitOfWork unitOfWork, ITranscriptService transcriptService)
         {
             this.enrollmentService = enrollmentService;
             this.unitOfWork = unitOfWork;
+            this.transcriptService = transcriptService;
+        }
+
+        private async Task SyncTranscriptFromEnrollmentAsync(Enrollment enrollment)
+        {
+            if (enrollment.Section == null)
+                enrollment = await unitOfWork.Enrollments
+                    .GetAllAsQueryable()
+                    .Include(e => e.Section!)
+                        .ThenInclude(s => s.Course)
+                    .FirstOrDefaultAsync(e => e.EnrollmentId == enrollment.EnrollmentId)
+                    ?? enrollment;
+
+            if (enrollment.Section == null || enrollment.Section.Course == null)
+                return;
+
+            var course = enrollment.Section.Course;
+            var semester = enrollment.Section.Semester ?? string.Empty;
+            var year = enrollment.Section.Year.Year;
+
+            var existingTranscript = await unitOfWork.Transcripts
+                .GetAllAsQueryable()
+                .FirstOrDefaultAsync(t =>
+                    t.StudentId == enrollment.StudentId &&
+                    t.SectionId == enrollment.SectionId &&
+                    t.CourseId == course.CourseId);
+
+            var shouldHaveTranscript = enrollment.Status == Status.Completed &&
+                !string.IsNullOrWhiteSpace(enrollment.Grade) &&
+                GradeHelper.IsValidGrade(enrollment.Grade);
+
+            if (shouldHaveTranscript)
+            {
+                var grade = enrollment.Grade!.ToUpperInvariant();
+                var gradePoints = GradeHelper.GetGradePoints(grade);
+
+                if (existingTranscript == null)
+                {
+                    existingTranscript = new Transcript
+                    {
+                        StudentId = enrollment.StudentId,
+                        CourseId = course.CourseId,
+                        SectionId = enrollment.SectionId,
+                        Grade = grade,
+                        GradePoints = gradePoints,
+                        Semester = semester,
+                        Year = year,
+                        CreditHours = course.CreditHours,
+                        CompletedAt = DateTime.UtcNow
+                    };
+                    await unitOfWork.Transcripts.AddAsync(existingTranscript);
+                }
+                else
+                {
+                    existingTranscript.Grade = grade;
+                    existingTranscript.GradePoints = gradePoints;
+                    existingTranscript.Semester = semester;
+                    existingTranscript.Year = year;
+                    existingTranscript.CreditHours = course.CreditHours;
+                    existingTranscript.CompletedAt = DateTime.UtcNow;
+                    unitOfWork.Transcripts.Update(existingTranscript);
+                }
+            }
+            else
+            {
+                // Enrollment not completed/graded -> ensure it does not appear as a completed transcript record.
+                if (existingTranscript != null)
+                {
+                    await unitOfWork.Transcripts.DeleteAsync(existingTranscript.TranscriptId);
+                }
+            }
+
+            await unitOfWork.SaveChangesAsync();
+            await transcriptService.RecalculateAndUpdateStudentGPAAsync(enrollment.StudentId);
         }
 
         private string GetUserId()
@@ -96,6 +171,8 @@ namespace RegMan.Backend.API.Controllers
                 .GetAllAsQueryable()
                 .Include(e => e.Section)
                     .ThenInclude(s => s!.Instructor)
+                .Include(e => e.Section)
+                    .ThenInclude(s => s!.Course)
                 .FirstOrDefaultAsync(e => e.EnrollmentId == id);
 
             if (enrollment == null)
@@ -142,6 +219,9 @@ namespace RegMan.Backend.API.Controllers
 
             await unitOfWork.SaveChangesAsync();
 
+            // Keep transcript/GPA in sync with enrollment edits
+            await SyncTranscriptFromEnrollmentAsync(enrollment);
+
             return Ok(ApiResponse<string>.SuccessResponse("Enrollment updated successfully"));
         }
 
@@ -179,6 +259,7 @@ namespace RegMan.Backend.API.Controllers
             var enrollment = await unitOfWork.Enrollments
                 .GetAllAsQueryable()
                 .Include(e => e.Section)
+                    .ThenInclude(s => s!.Course)
                 .Include(e => e.Student)
                 .FirstOrDefaultAsync(e => e.EnrollmentId == id);
 
@@ -226,6 +307,9 @@ namespace RegMan.Backend.API.Controllers
                 enrollment.Section.AvailableSeats++;
 
             await unitOfWork.SaveChangesAsync();
+
+            // Ensure transcript/GPA reflects the drop/withdraw
+            await SyncTranscriptFromEnrollmentAsync(enrollment);
 
             return Ok(ApiResponse<string>.SuccessResponse("Enrollment dropped successfully"));
         }

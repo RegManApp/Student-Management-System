@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using RegMan.Backend.BusinessLayer.Contracts;
 using RegMan.Backend.BusinessLayer.DTOs.TranscriptDTOs;
+using RegMan.Backend.BusinessLayer.Helpers;
 using RegMan.Backend.DAL.Contracts;
 using RegMan.Backend.DAL.Entities;
 using System.Security.Claims;
@@ -13,15 +15,103 @@ namespace RegMan.Backend.BusinessLayer.Services
         private readonly IUnitOfWork unitOfWork;
         private readonly IAuditLogService auditLogService;
         private readonly IHttpContextAccessor httpContextAccessor;
+        private readonly InstitutionSettings institutionSettings;
 
         public TranscriptService(
             IUnitOfWork unitOfWork,
             IAuditLogService auditLogService,
-            IHttpContextAccessor httpContextAccessor)
+            IHttpContextAccessor httpContextAccessor,
+            IOptions<InstitutionSettings> institutionOptions)
         {
             this.unitOfWork = unitOfWork;
             this.auditLogService = auditLogService;
             this.httpContextAccessor = httpContextAccessor;
+            this.institutionSettings = institutionOptions?.Value ?? new InstitutionSettings();
+        }
+
+        private static int SemesterSortKey(string semester)
+        {
+            if (string.IsNullOrWhiteSpace(semester))
+                return 99;
+
+            return semester.Trim().ToLowerInvariant() switch
+            {
+                "winter" => 0,
+                "spring" => 1,
+                "summer" => 2,
+                "fall" => 3,
+                _ => 99
+            };
+        }
+
+        private static string BuildTermName(string semester, int year)
+        {
+            if (string.IsNullOrWhiteSpace(semester))
+                return year > 0 ? year.ToString() : string.Empty;
+
+            return year > 0 ? $"{year} {semester}" : semester;
+        }
+
+        private static string? BuildSectionSubType(Section? section)
+        {
+            var slotTypes = section?.Slots?
+                .Select(s => s.SlotType.ToString())
+                .Distinct()
+                .OrderBy(x => x)
+                .ToList();
+
+            if (slotTypes == null || slotTypes.Count == 0)
+                return null;
+
+            return string.Join("/", slotTypes);
+        }
+
+        private int TermSortKey(int year, string semester)
+        {
+            var semKey = SemesterSortKey(semester);
+            return (year * 10) + semKey;
+        }
+
+        private static Transcript? PickLatestAttempt(IEnumerable<Transcript> attempts)
+        {
+            return attempts
+                .OrderByDescending(t => t.Year)
+                .ThenByDescending(t => SemesterSortKey(t.Semester))
+                .ThenByDescending(t => t.CompletedAt)
+                .ThenByDescending(t => t.TranscriptId)
+                .FirstOrDefault();
+        }
+
+        private ViewTranscriptDTO? PickLatestAttempt(IEnumerable<ViewTranscriptDTO> attempts)
+        {
+            return attempts
+                .OrderByDescending(r => r.Year)
+                .ThenByDescending(r => SemesterSortKey(r.Semester))
+                .ThenByDescending(r => r.CompletedAt ?? DateTime.MinValue)
+                .ThenByDescending(r => r.TranscriptId)
+                .FirstOrDefault();
+        }
+
+        private IEnumerable<Transcript> ApplyGpaPolicy(IEnumerable<Transcript> transcripts)
+        {
+            if (institutionSettings.TranscriptGpaPolicy == TranscriptGpaPolicy.AllAttempts)
+                return transcripts;
+
+            return transcripts
+                .GroupBy(t => t.CourseId)
+                .Select(g => PickLatestAttempt(g)!)
+                .Where(t => t != null);
+        }
+
+        private IEnumerable<ViewTranscriptDTO> ApplyGpaPolicy(IEnumerable<ViewTranscriptDTO> rows)
+        {
+            if (institutionSettings.TranscriptGpaPolicy == TranscriptGpaPolicy.AllAttempts)
+                return rows;
+
+            return rows
+                .GroupBy(r => r.CourseId)
+                .Select(g => PickLatestAttempt(g)!)
+                .Where(r => r != null);
         }
 
         // =========================
@@ -47,7 +137,7 @@ namespace RegMan.Backend.BusinessLayer.Services
         public async Task<ViewTranscriptDTO> CreateTranscriptAsync(CreateTranscriptDTO dto)
         {
             // Validate grade
-            if (!GradeHelper.IsValidGrade(dto.Grade))
+            if (!GradeHelper.IsRecognizedGrade(dto.Grade))
                 throw new ArgumentException($"Invalid grade: {dto.Grade}");
 
             // Check student exists
@@ -104,9 +194,14 @@ namespace RegMan.Backend.BusinessLayer.Services
                 CourseId = transcript.CourseId,
                 CourseName = course.CourseName,
                 CourseCode = course.CourseCode,
+                Status = "COMPLETED",
                 CreditHours = transcript.CreditHours,
                 Grade = transcript.Grade,
                 GradePoints = transcript.GradePoints,
+                CountsTowardGpa = GradeHelper.CountsTowardGpa(transcript.Grade),
+                QualityPoints = GradeHelper.CountsTowardGpa(transcript.Grade)
+                    ? (double?)(transcript.GradePoints * transcript.CreditHours)
+                    : null,
                 Semester = transcript.Semester,
                 Year = transcript.Year,
                 CompletedAt = transcript.CompletedAt
@@ -118,7 +213,7 @@ namespace RegMan.Backend.BusinessLayer.Services
         // =====================================
         public async Task<ViewTranscriptDTO> UpdateGradeAsync(UpdateTranscriptDTO dto)
         {
-            if (!GradeHelper.IsValidGrade(dto.Grade))
+            if (!GradeHelper.IsRecognizedGrade(dto.Grade))
                 throw new ArgumentException($"Invalid grade: {dto.Grade}");
 
             var transcript = await unitOfWork.Transcripts
@@ -150,9 +245,14 @@ namespace RegMan.Backend.BusinessLayer.Services
                 CourseId = transcript.CourseId,
                 CourseName = transcript.Course.CourseName,
                 CourseCode = transcript.Course.CourseCode,
+                Status = "COMPLETED",
                 CreditHours = transcript.CreditHours,
                 Grade = transcript.Grade,
                 GradePoints = transcript.GradePoints,
+                CountsTowardGpa = GradeHelper.CountsTowardGpa(transcript.Grade),
+                QualityPoints = GradeHelper.CountsTowardGpa(transcript.Grade)
+                    ? (double?)(transcript.GradePoints * transcript.CreditHours)
+                    : null,
                 Semester = transcript.Semester,
                 Year = transcript.Year,
                 CompletedAt = transcript.CompletedAt
@@ -203,9 +303,14 @@ namespace RegMan.Backend.BusinessLayer.Services
                 CourseId = transcript.CourseId,
                 CourseName = transcript.Course.CourseName,
                 CourseCode = transcript.Course.CourseCode,
+                Status = "COMPLETED",
                 CreditHours = transcript.CreditHours,
                 Grade = transcript.Grade,
                 GradePoints = transcript.GradePoints,
+                CountsTowardGpa = GradeHelper.CountsTowardGpa(transcript.Grade),
+                QualityPoints = GradeHelper.CountsTowardGpa(transcript.Grade)
+                    ? (double?)(transcript.GradePoints * transcript.CreditHours)
+                    : null,
                 Semester = transcript.Semester,
                 Year = transcript.Year,
                 CompletedAt = transcript.CompletedAt
@@ -233,9 +338,14 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseId = t.CourseId,
                     CourseName = t.Course.CourseName,
                     CourseCode = t.Course.CourseCode,
+                    Status = "COMPLETED",
                     CreditHours = t.CreditHours,
                     Grade = t.Grade,
                     GradePoints = t.GradePoints,
+                    CountsTowardGpa = GradeHelper.IsValidGrade(t.Grade),
+                    QualityPoints = GradeHelper.IsValidGrade(t.Grade)
+                        ? (double?)(t.GradePoints * t.CreditHours)
+                        : null,
                     Semester = t.Semester,
                     Year = t.Year,
                     CompletedAt = t.CompletedAt
@@ -262,9 +372,14 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseId = t.CourseId,
                     CourseName = t.Course.CourseName,
                     CourseCode = t.Course.CourseCode,
+                    Status = "COMPLETED",
                     CreditHours = t.CreditHours,
                     Grade = t.Grade,
                     GradePoints = t.GradePoints,
+                    CountsTowardGpa = GradeHelper.IsValidGrade(t.Grade),
+                    QualityPoints = GradeHelper.IsValidGrade(t.Grade)
+                        ? (double?)(t.GradePoints * t.CreditHours)
+                        : null,
                     Semester = t.Semester,
                     Year = t.Year,
                     CompletedAt = t.CompletedAt
@@ -283,6 +398,15 @@ namespace RegMan.Backend.BusinessLayer.Services
                 .Include(s => s.AcademicPlan)
                 .Include(s => s.Transcripts)
                     .ThenInclude(t => t.Course)
+                .Include(s => s.Transcripts)
+                    .ThenInclude(t => t.Section)
+                        .ThenInclude(sec => sec.Slots)
+                .Include(s => s.Enrollments)
+                    .ThenInclude(e => e.Section!)
+                        .ThenInclude(sec => sec.Course)
+                .Include(s => s.Enrollments)
+                    .ThenInclude(e => e.Section!)
+                        .ThenInclude(sec => sec.Slots)
                 .FirstOrDefaultAsync(s => s.UserId == studentUserId)
                 ?? throw new Exception("Student not found.");
 
@@ -295,6 +419,50 @@ namespace RegMan.Backend.BusinessLayer.Services
         public async Task<StudentTranscriptSummaryDTO> GetMyTranscriptAsync(string userId)
         {
             return await GetStudentFullTranscriptAsync(userId);
+        }
+
+        // =====================================
+        // Admin: Search Students (name/id/email)
+        // =====================================
+        public async Task<IEnumerable<StudentLookupDTO>> SearchStudentsAsync(string query, int take = 10)
+        {
+            var q = (query ?? string.Empty).Trim();
+            if (string.IsNullOrWhiteSpace(q))
+                return new List<StudentLookupDTO>();
+
+            var canParseId = int.TryParse(q, out var studentId);
+
+            // Note: keep this query simple and indexed-friendly.
+            var baseQuery = unitOfWork.StudentProfiles
+                .GetAllAsQueryable()
+                .AsNoTracking()
+                .Include(s => s.User)
+                .Where(s => s.User != null);
+
+            if (canParseId)
+            {
+                baseQuery = baseQuery.Where(s => s.StudentId == studentId);
+            }
+            else
+            {
+                var like = $"%{q}%";
+                baseQuery = baseQuery.Where(s =>
+                    EF.Functions.Like(s.User.FullName, like) ||
+                    (s.User.Email != null && EF.Functions.Like(s.User.Email, like))
+                );
+            }
+
+            return await baseQuery
+                .OrderBy(s => s.StudentId)
+                .Take(Math.Clamp(take, 1, 50))
+                .Select(s => new StudentLookupDTO
+                {
+                    StudentUserId = s.UserId,
+                    StudentId = s.StudentId,
+                    FullName = s.User.FullName,
+                    Email = s.User.Email ?? string.Empty
+                })
+                .ToListAsync();
         }
 
         // =====================================
@@ -413,13 +581,21 @@ namespace RegMan.Backend.BusinessLayer.Services
             }
             else
             {
-                double totalQualityPoints = transcripts.Sum(t => t.GradePoints * t.CreditHours);
-                int totalCredits = transcripts.Sum(t => t.CreditHours);
+                // Earned credits should not double-count retakes.
+                var earnedCredits = transcripts
+                    .GroupBy(t => t.CourseId)
+                    .Sum(g => g.Any(a => GradeHelper.IsPassing(a.Grade)) ? g.First().CreditHours : 0);
 
-                student.GPA = totalCredits > 0 ? Math.Round(totalQualityPoints / totalCredits, 2) : 0.0;
-                student.CompletedCredits = transcripts
-                    .Where(t => GradeHelper.IsPassing(t.Grade))
-                    .Sum(t => t.CreditHours);
+                // GPA should follow configured retake policy.
+                var attemptsForGpa = ApplyGpaPolicy(transcripts)
+                    .Where(t => GradeHelper.CountsTowardGpa(t.Grade))
+                    .ToList();
+
+                var gpaCredits = attemptsForGpa.Sum(t => t.CreditHours);
+                var qualityPoints = attemptsForGpa.Sum(t => t.GradePoints * t.CreditHours);
+
+                student.GPA = gpaCredits > 0 ? Math.Round(qualityPoints / gpaCredits, 2) : 0.0;
+                student.CompletedCredits = earnedCredits;
             }
 
             unitOfWork.StudentProfiles.Update(student);
@@ -469,9 +645,14 @@ namespace RegMan.Backend.BusinessLayer.Services
                     CourseId = t.CourseId,
                     CourseName = t.Course.CourseName,
                     CourseCode = t.Course.CourseCode,
+                    Status = "COMPLETED",
                     CreditHours = t.CreditHours,
                     Grade = t.Grade,
                     GradePoints = t.GradePoints,
+                    CountsTowardGpa = GradeHelper.CountsTowardGpa(t.Grade),
+                    QualityPoints = GradeHelper.CountsTowardGpa(t.Grade)
+                        ? (double?)(t.GradePoints * t.CreditHours)
+                        : null,
                     Semester = t.Semester,
                     Year = t.Year,
                     CompletedAt = t.CompletedAt
@@ -484,55 +665,222 @@ namespace RegMan.Backend.BusinessLayer.Services
         // =========================
         private StudentTranscriptSummaryDTO BuildStudentTranscriptSummary(StudentProfile student)
         {
-            var transcripts = student.Transcripts.ToList();
+            var transcriptRows = new List<ViewTranscriptDTO>();
+            var completedKeySet = new HashSet<(int SectionId, int CourseId)>();
 
-            // Group by semester and year
-            var semesterGroups = transcripts
-                .GroupBy(t => new { t.Semester, t.Year })
-                .OrderByDescending(g => g.Key.Year)
-                .ThenByDescending(g => g.Key.Semester)
-                .Select(g => new SemesterTranscriptDTO
+            // Completed/graded records (source of truth for GPA)
+            foreach (var t in student.Transcripts ?? Enumerable.Empty<Transcript>())
+            {
+                completedKeySet.Add((t.SectionId, t.CourseId));
+
+                var countsTowardGpa = !string.IsNullOrWhiteSpace(t.Grade) && GradeHelper.CountsTowardGpa(t.Grade);
+                var qualityPoints = countsTowardGpa ? (double?)(t.GradePoints * t.CreditHours) : null;
+
+                transcriptRows.Add(new ViewTranscriptDTO
                 {
-                    Semester = g.Key.Semester,
-                    Year = g.Key.Year,
-                    SemesterGPA = g.Sum(t => t.CreditHours) > 0
-                        ? Math.Round(g.Sum(t => t.GradePoints * t.CreditHours) / g.Sum(t => t.CreditHours), 2)
-                        : 0.0,
-                    SemesterCredits = g.Sum(t => t.CreditHours),
-                    Courses = g.Select(t => new ViewTranscriptDTO
+                    TranscriptId = t.TranscriptId,
+                    EnrollmentId = null,
+                    StudentId = t.StudentId,
+                    StudentName = student.User.FullName,
+                    CourseId = t.CourseId,
+                    CourseName = t.Course?.CourseName ?? string.Empty,
+                    CourseCode = t.Course?.CourseCode ?? string.Empty,
+                    SubType = BuildSectionSubType(t.Section),
+                    Status = "COMPLETED",
+                    CreditHours = t.CreditHours,
+                    Grade = t.Grade,
+                    GradePoints = t.GradePoints,
+                    QualityPoints = qualityPoints,
+                    CountsTowardGpa = countsTowardGpa,
+                    Semester = t.Semester,
+                    Year = t.Year,
+                    CompletedAt = t.CompletedAt
+                });
+            }
+
+            // In-progress / withdrawn records from enrollments
+            foreach (var e in student.Enrollments ?? Enumerable.Empty<Enrollment>())
+            {
+                if (e.Section == null || e.Section.Course == null)
+                    continue;
+
+                // Avoid duplicates if enrollment already has a transcript record
+                if (completedKeySet.Contains((e.SectionId, e.Section.CourseId)))
+                    continue;
+
+                if (e.Status != Status.Enrolled && e.Status != Status.Dropped && e.Status != Status.Completed)
+                    continue;
+
+                var semester = e.Section.Semester ?? string.Empty;
+                var year = e.Section.Year.Year;
+                var creditHours = e.Section.Course.CreditHours;
+
+                var status = e.Status switch
+                {
+                    Status.Dropped => "WITHDRAWN",
+                    Status.Completed => "COMPLETED",
+                    _ => "IN_PROGRESS"
+                };
+
+                var grade = status == "WITHDRAWN" ? "W" : (e.Grade ?? string.Empty);
+                var countsTowardGpa = status == "COMPLETED" && !string.IsNullOrWhiteSpace(grade) && GradeHelper.CountsTowardGpa(grade);
+                var gradePoints = countsTowardGpa ? GradeHelper.GetGradePoints(grade) : 0.0;
+                var qualityPoints = countsTowardGpa ? (double?)(gradePoints * creditHours) : null;
+
+                transcriptRows.Add(new ViewTranscriptDTO
+                {
+                    TranscriptId = 0,
+                    EnrollmentId = e.EnrollmentId,
+                    StudentId = student.StudentId,
+                    StudentName = student.User.FullName,
+                    CourseId = e.Section.CourseId,
+                    CourseName = e.Section.Course.CourseName,
+                    CourseCode = e.Section.Course.CourseCode,
+                    SubType = BuildSectionSubType(e.Section),
+                    Status = status,
+                    CreditHours = creditHours,
+                    Grade = grade,
+                    GradePoints = gradePoints,
+                    QualityPoints = qualityPoints,
+                    CountsTowardGpa = countsTowardGpa,
+                    Semester = semester,
+                    Year = year,
+                    CompletedAt = status == "COMPLETED" ? e.ApprovedAt : null
+                });
+            }
+
+            // Group rows by term
+            var termGroups = transcriptRows
+                .GroupBy(r => new { r.Year, r.Semester })
+                .OrderBy(g => g.Key.Year)
+                .ThenBy(g => SemesterSortKey(g.Key.Semester))
+                .Select(g =>
+                {
+                    var attemptedCredits = g
+                        .Where(r => r.Status == "COMPLETED" || r.Status == "IN_PROGRESS" || r.Status == "WITHDRAWN")
+                        .Sum(r => r.CreditHours);
+
+                    var earnedCredits = g
+                        .Where(r => r.Status == "COMPLETED" && !string.IsNullOrWhiteSpace(r.Grade) && GradeHelper.IsPassing(r.Grade))
+                        .Sum(r => r.CreditHours);
+
+                    var transferCredits = g
+                        .Where(r => r.Status == "COMPLETED" && !string.IsNullOrWhiteSpace(r.Grade) && GradeHelper.IsTransferCredit(r.Grade))
+                        .Sum(r => r.CreditHours);
+
+                    var gpaCredits = g
+                        .Where(r => r.CountsTowardGpa)
+                        .Sum(r => r.CreditHours);
+
+                    var qualityPoints = g
+                        .Where(r => r.CountsTowardGpa && r.QualityPoints.HasValue)
+                        .Sum(r => r.QualityPoints!.Value);
+
+                    var gpa = gpaCredits > 0 ? Math.Round(qualityPoints / gpaCredits, 2) : 0.0;
+
+                    var summary = new TranscriptTermSummaryDTO
                     {
-                        TranscriptId = t.TranscriptId,
-                        StudentId = t.StudentId,
-                        StudentName = student.User.FullName,
-                        CourseId = t.CourseId,
-                        CourseName = t.Course.CourseName,
-                        CourseCode = t.Course.CourseCode,
-                        CreditHours = t.CreditHours,
-                        Grade = t.Grade,
-                        GradePoints = t.GradePoints,
-                        Semester = t.Semester,
-                        Year = t.Year,
-                        CompletedAt = t.CompletedAt
-                    }).ToList()
+                        AttemptedCredits = attemptedCredits,
+                        EarnedCredits = earnedCredits,
+                        GpaCredits = gpaCredits,
+                        TransferCredits = transferCredits,
+                        QualityPoints = Math.Round(qualityPoints, 2),
+                        GPA = gpa
+                    };
+
+                    var orderedCourses = g
+                        .OrderBy(r => r.CourseCode)
+                        .ThenBy(r => r.CourseName)
+                        .ToList();
+
+                    return new SemesterTranscriptDTO
+                    {
+                        Semester = g.Key.Semester,
+                        Year = g.Key.Year,
+                        TermName = BuildTermName(g.Key.Semester, g.Key.Year),
+                        InstitutionName = string.IsNullOrWhiteSpace(institutionSettings.InstitutionName)
+                            ? institutionSettings.UniversityName
+                            : institutionSettings.InstitutionName,
+                        SemesterGPA = summary.GPA,
+                        SemesterCredits = summary.AttemptedCredits,
+                        Summary = summary,
+                        Courses = orderedCourses
+                    };
                 })
                 .ToList();
 
-            int totalCreditsCompleted = transcripts.Where(t => GradeHelper.IsPassing(t.Grade)).Sum(t => t.CreditHours);
-            int totalCreditsRequired = student.AcademicPlan?.TotalCreditsRequired ?? 0;
+            // Overall summary
+            // - Attempted credits: reflect all attempts (including withdraw/in-progress)
+            // - Earned credits: should not double-count retakes
+            // - GPA: follows configured retake policy
+            var overallAttemptedCredits = termGroups.Sum(tg => tg.Summary.AttemptedCredits);
+
+            var completedRows = transcriptRows
+                .Where(r => r.Status == "COMPLETED")
+                .ToList();
+
+            var overallEarnedCredits = completedRows
+                .GroupBy(r => r.CourseId)
+                .Sum(g => g.Any(a => !string.IsNullOrWhiteSpace(a.Grade) && GradeHelper.IsPassing(a.Grade))
+                    ? g.First().CreditHours
+                    : 0);
+
+            var overallTransferCredits = completedRows
+                .GroupBy(r => r.CourseId)
+                .Sum(g => g.Any(a => !string.IsNullOrWhiteSpace(a.Grade) && GradeHelper.IsTransferCredit(a.Grade))
+                    ? g.First().CreditHours
+                    : 0);
+
+            var gpaAttemptRows = ApplyGpaPolicy(completedRows)
+                .Where(r => !string.IsNullOrWhiteSpace(r.Grade) && GradeHelper.CountsTowardGpa(r.Grade))
+                .ToList();
+
+            var overallGpaCredits = gpaAttemptRows.Sum(r => r.CreditHours);
+            var overallQualityPoints = gpaAttemptRows
+                .Where(r => r.QualityPoints.HasValue)
+                .Sum(r => r.QualityPoints!.Value);
+            var overallGpa = overallGpaCredits > 0 ? Math.Round(overallQualityPoints / overallGpaCredits, 2) : 0.0;
+
+            var totalCreditsRequired = student.AcademicPlan?.TotalCreditsRequired ?? 0;
+            var completionPercentage = totalCreditsRequired > 0
+                ? Math.Round((double)overallEarnedCredits / totalCreditsRequired * 100, 2)
+                : 0.0;
 
             return new StudentTranscriptSummaryDTO
             {
+                Header = new TranscriptHeaderDTO
+                {
+                    TranscriptType = "Unofficial",
+                    UniversityName = institutionSettings.UniversityName,
+                    RegistrarOfficeName = institutionSettings.RegistrarOfficeName,
+                    RegistrarAddressLines = institutionSettings.RegistrarAddressLines ?? new List<string>(),
+                    StudentFullName = student.User.FullName,
+                    StudentId = student.StudentId,
+                    StudentEmail = student.User.Email ?? string.Empty,
+                    ProgramOrDegree = student.AcademicPlan?.MajorName,
+                    Curriculum = student.AcademicPlanId,
+                    DegreeAwarded = null,
+                    Honors = null,
+                    PreviousInstitution = null
+                },
                 StudentId = student.StudentId,
                 StudentName = student.User.FullName,
                 Email = student.User.Email ?? string.Empty,
-                MajorName = student.AcademicPlan?.MajorName ?? "Not Assigned",
-                CumulativeGPA = student.GPA,
-                TotalCreditsCompleted = totalCreditsCompleted,
+                MajorName = student.AcademicPlan?.MajorName ?? string.Empty,
+                CumulativeGPA = overallGpa,
+                TotalCreditsCompleted = overallEarnedCredits,
                 TotalCreditsRequired = totalCreditsRequired,
-                CompletionPercentage = totalCreditsRequired > 0
-                    ? Math.Round((double)totalCreditsCompleted / totalCreditsRequired * 100, 2)
-                    : 0.0,
-                Semesters = semesterGroups
+                CompletionPercentage = completionPercentage,
+                Semesters = termGroups,
+                OverallSummary = new TranscriptOverallSummaryDTO
+                {
+                    AttemptedCredits = overallAttemptedCredits,
+                    EarnedCredits = overallEarnedCredits,
+                    GpaCredits = overallGpaCredits,
+                    TransferCredits = overallTransferCredits,
+                    QualityPoints = Math.Round(overallQualityPoints, 2),
+                    GPA = overallGpa
+                }
             };
         }
     }

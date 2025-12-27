@@ -25,6 +25,11 @@ namespace RegMan.Backend.BusinessLayer.Contracts
         Task<StudentTranscriptSummaryDTO> GetMyTranscriptAsync(string userId);
 
         // =====================================
+        // Admin Utilities
+        // =====================================
+        Task<IEnumerable<StudentLookupDTO>> SearchStudentsAsync(string query, int take = 10);
+
+        // =====================================
         // GPA Calculations
         // =====================================
         Task<double> CalculateStudentGPAAsync(int studentId);
