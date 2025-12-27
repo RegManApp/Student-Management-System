@@ -111,6 +111,10 @@ namespace RegMan.Backend.BusinessLayer.Services
                 {
                     CartItemId = ci.CartItemId,
                     ScheduleSlotId = ci.ScheduleSlotId,
+                    SectionId = ci.ScheduleSlot.SectionId,
+                    CourseId = ci.ScheduleSlot.Section.CourseId,
+                    CourseCode = ci.ScheduleSlot.Section.Course.CourseCode,
+                    CourseName = ci.ScheduleSlot.Section.Course.CourseName,
                     SectionName = $"{ci.ScheduleSlot.Section.Course.CourseName} - Section {ci.ScheduleSlot.Section.SectionId}",
                     TimeSlot = $"{ci.ScheduleSlot.TimeSlot.StartTime} - {ci.ScheduleSlot.TimeSlot.EndTime}",
                     Room = $"{ci.ScheduleSlot.Room.Building} - {ci.ScheduleSlot.Room.RoomNumber}"

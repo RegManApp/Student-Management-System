@@ -49,6 +49,25 @@ namespace RegMan.Backend.API.Controllers
 
             return (true, "");
         }
+
+        private static bool IsTimelineWindowConflict(string message)
+        {
+            // Outside the registration window should be treated as a conflict (409).
+            // Misconfiguration remains a bad request (400).
+            return message.StartsWith("Registration is not open yet", StringComparison.OrdinalIgnoreCase)
+                || message.StartsWith("Registration is closed", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private IActionResult TimelineGateFailure(string message)
+        {
+            var statusCode = IsTimelineWindowConflict(message)
+                ? StatusCodes.Status409Conflict
+                : StatusCodes.Status400BadRequest;
+
+            return StatusCode(
+                statusCode,
+                ApiResponse<string>.FailureResponse(message, statusCode));
+        }
         private string GetStudentID()
         {
             // Prefer NameIdentifier; fall back to common JWT subject claims.
@@ -68,7 +87,7 @@ namespace RegMan.Backend.API.Controllers
 
             var gate = await EnsureRegistrationOpenAsync();
             if (!gate.ok)
-                return BadRequest(ApiResponse<string>.FailureResponse(gate.message, StatusCodes.Status400BadRequest));
+                return TimelineGateFailure(gate.message);
 
             await cartService.AddToCartAsync(userId, scheduleSlotId);
             return Ok(ApiResponse<string>
@@ -85,7 +104,7 @@ namespace RegMan.Backend.API.Controllers
 
             var gate = await EnsureRegistrationOpenAsync();
             if (!gate.ok)
-                return BadRequest(ApiResponse<string>.FailureResponse(gate.message, StatusCodes.Status400BadRequest));
+                return TimelineGateFailure(gate.message);
 
             await cartService.AddToCartByCourseAsync(userId, courseId);
             return Ok(ApiResponse<string>
@@ -120,7 +139,7 @@ namespace RegMan.Backend.API.Controllers
 
             var gate = await EnsureRegistrationOpenAsync();
             if (!gate.ok)
-                return BadRequest(ApiResponse<string>.FailureResponse(gate.message, StatusCodes.Status400BadRequest));
+                return TimelineGateFailure(gate.message);
 
             await enrollmentService.EnrollFromCartAsync(userId);
 
@@ -129,7 +148,7 @@ namespace RegMan.Backend.API.Controllers
             ));
         }
 
-        // Alias for enroll - checkout
+        // Checkout is validation-only (idempotent)
         [HttpPost("checkout")]
         public async Task<IActionResult> Checkout()
         {
@@ -139,12 +158,13 @@ namespace RegMan.Backend.API.Controllers
 
             var gate = await EnsureRegistrationOpenAsync();
             if (!gate.ok)
-                return BadRequest(ApiResponse<string>.FailureResponse(gate.message, StatusCodes.Status400BadRequest));
+                return TimelineGateFailure(gate.message);
 
-            await enrollmentService.EnrollFromCartAsync(userId);
+            var validation = await enrollmentService.ValidateCheckoutFromCartAsync(userId);
 
-            return Ok(ApiResponse<string>.SuccessResponse(
-                "Checkout completed successfully"
+            return Ok(ApiResponse<object>.SuccessResponse(
+                validation,
+                "Checkout validation passed"
             ));
         }
 

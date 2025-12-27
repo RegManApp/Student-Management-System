@@ -10,6 +10,10 @@ namespace RegMan.Backend.BusinessLayer.DTOs.CartDTOs
     {
         public int CartItemId { get; set; }
         public int ScheduleSlotId { get; set; }
+        public int SectionId { get; set; }
+        public int CourseId { get; set; }
+        public string CourseCode { get; set; } = string.Empty;
+        public string CourseName { get; set; } = string.Empty;
         public string SectionName { get; set; } = string.Empty;
         public string Room { get; set; } = string.Empty;
         public string TimeSlot { get; set; } = string.Empty;
