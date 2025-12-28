@@ -108,14 +108,15 @@ internal class EnrollmentService : IEnrollmentService
     {
         var section = await unitOfWork.Sections
             .GetAllAsQueryable()
-            .Include(s => s.Enrollments)
             .Include(s => s.Course)
             .FirstOrDefaultAsync(s => s.SectionId == sectionId)
             ?? throw new NotFoundException("Section not found");
 
         // Unique index exists on (StudentId, SectionId). Re-enroll MUST reuse the existing row.
-        var existingEnrollmentInSection = section.Enrollments
-            .FirstOrDefault(e => e.StudentId == student.StudentId);
+        // Do NOT rely solely on navigation loading; query directly to avoid DbUpdateException -> generic 409.
+        var existingEnrollmentInSection = await unitOfWork.Enrollments
+            .GetAllAsQueryable()
+            .FirstOrDefaultAsync(e => e.StudentId == student.StudentId && e.SectionId == sectionId);
 
         if (existingEnrollmentInSection != null)
         {

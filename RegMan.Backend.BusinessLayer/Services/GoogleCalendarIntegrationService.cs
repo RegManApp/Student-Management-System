@@ -132,6 +132,11 @@ namespace RegMan.Backend.BusinessLayer.Services
             return state.ReturnUrl;
         }
 
+        public Task<bool> IsConnectedAsync(string userId, CancellationToken cancellationToken)
+        {
+            return HasGoogleTokenAsync(userId, cancellationToken);
+        }
+
         public async Task TryCreateOfficeHourBookingEventAsync(OfficeHourBooking booking, CancellationToken cancellationToken)
         {
             if (!isConfigured)

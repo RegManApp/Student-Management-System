@@ -34,6 +34,24 @@ namespace RegMan.Backend.API.Controllers
         }
 
         /// <summary>
+        /// Returns whether the current user has a stored Google Calendar connection.
+        /// Never returns tokens.
+        /// </summary>
+        [HttpGet("status")]
+        [Authorize]
+        public async Task<IActionResult> Status(CancellationToken cancellationToken)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized(ApiResponse<string>.FailureResponse("User is not authenticated", 401));
+
+            var connected = await googleCalendarIntegrationService.IsConnectedAsync(userId, cancellationToken);
+            var email = User.FindFirstValue(ClaimTypes.Email);
+
+            return Ok(ApiResponse<object>.SuccessResponse(new { connected, email }));
+        }
+
+        /// <summary>
         /// OAuth callback endpoint configured in Google Cloud Console.
         /// </summary>
         [HttpGet("callback")]
