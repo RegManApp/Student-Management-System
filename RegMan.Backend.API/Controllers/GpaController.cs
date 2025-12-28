@@ -45,6 +45,8 @@ namespace RegMan.Backend.API.Controllers
             if (student == null)
                 return NotFound(ApiResponse<string>.FailureResponse("Student profile not found", 404));
 
+            var calculatedGPA = await transcriptService.CalculateStudentGPAAsync(student.StudentId);
+
             var enrollments = student.Enrollments
                 .Where(e => e.Section?.Course != null)
                 .Select(e => new
@@ -60,11 +62,6 @@ namespace RegMan.Backend.API.Controllers
                     Semester = e.Section!.Semester
                 })
                 .ToList();
-
-            var completedEnrollments = enrollments.Where(e => e.Grade != null && e.Status == "Completed").ToList();
-            var totalCredits = completedEnrollments.Sum(e => e.CreditHours);
-            var totalGradePoints = completedEnrollments.Sum(e => e.GradePoints * e.CreditHours);
-            var calculatedGPA = totalCredits > 0 ? Math.Round(totalGradePoints / totalCredits, 2) : 0;
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {
@@ -94,6 +91,8 @@ namespace RegMan.Backend.API.Controllers
             if (student == null)
                 return NotFound(ApiResponse<string>.FailureResponse("Student not found", 404));
 
+            var calculatedGPA = await transcriptService.CalculateStudentGPAAsync(student.StudentId);
+
             var enrollments = student.Enrollments
                 .Where(e => e.Section?.Course != null)
                 .Select(e => new
@@ -109,11 +108,6 @@ namespace RegMan.Backend.API.Controllers
                     Semester = e.Section!.Semester
                 })
                 .ToList();
-
-            var completedEnrollments = enrollments.Where(e => e.Grade != null).ToList();
-            var totalCredits = completedEnrollments.Sum(e => e.CreditHours);
-            var totalGradePoints = completedEnrollments.Sum(e => e.GradePoints * e.CreditHours);
-            var calculatedGPA = totalCredits > 0 ? Math.Round(totalGradePoints / totalCredits, 2) : 0;
 
             return Ok(ApiResponse<object>.SuccessResponse(new
             {

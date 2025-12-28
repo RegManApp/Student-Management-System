@@ -19,13 +19,11 @@ namespace RegMan.Backend.API.Controllers
 
         /// <summary>
         /// Returns a Google authorization URL for the current user.
-        /// Frontend should request this endpoint with JWT auth, then navigate the browser to the returned URL.
+        /// Frontend should call this with JWT auth, then navigate the browser to the returned URL.
         /// </summary>
-        [HttpGet("connect")]
+        [HttpGet("connect-url")]
         [Authorize]
-        public IActionResult Connect(
-            [FromQuery] string? returnUrl = null,
-            [FromQuery] bool redirect = false)
+        public IActionResult GetConnectUrl([FromQuery] string? returnUrl = null)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
@@ -41,11 +39,31 @@ namespace RegMan.Backend.API.Controllers
 
             var url = googleCalendarIntegrationService.CreateAuthorizationUrl(userId, safeReturnUrl);
 
-            // Optional: allow explicit redirect when caller can authenticate the request.
-            if (redirect)
-                return Redirect(url);
+            return Ok(ApiResponse<object>.SuccessResponse(new { url }));
+        }
 
-            return Ok(ApiResponse<string>.SuccessResponse(url));
+        /// <summary>
+        /// Legacy endpoint: redirects to Google authorization URL.
+        /// NOTE: Browser navigation will not include JWT, so frontend must use /connect-url.
+        /// </summary>
+        [HttpGet("connect")]
+        [Authorize]
+        public IActionResult Connect([FromQuery] string? returnUrl = null)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized(ApiResponse<string>.FailureResponse("User is not authenticated", 401));
+
+            string? safeReturnUrl = null;
+            if (!string.IsNullOrWhiteSpace(returnUrl)
+                && returnUrl.StartsWith('/')
+                && !returnUrl.StartsWith("//"))
+            {
+                safeReturnUrl = returnUrl;
+            }
+
+            var url = googleCalendarIntegrationService.CreateAuthorizationUrl(userId, safeReturnUrl);
+            return Redirect(url);
         }
 
         /// <summary>
