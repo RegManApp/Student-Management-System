@@ -19,6 +19,7 @@ using RegMan.Backend.DAL.Entities;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.Xml.Linq;
 using static System.Net.WebRequestMethods;
 
 namespace RegMan.Backend.API
@@ -28,6 +29,16 @@ namespace RegMan.Backend.API
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            // ==================
+            // MonsterASP/IIS config fallback
+            // ==================
+            // Some shared IIS hosts do not expose "secrets" as real process environment variables.
+            // They may instead write them into the generated web.config as either:
+            // - <configuration><appSettings><add key="..." value="..."/></appSettings>
+            // - <configuration><system.webServer><aspNetCore><environmentVariables>...</environmentVariables>
+            // We ingest those values into IConfiguration early so DI services can read them.
+            TryAddWebConfigSecrets(builder);
 
             // ==================
             // CORS Policy
@@ -309,6 +320,67 @@ namespace RegMan.Backend.API
             );
 
             app.Run();
+        }
+
+        private static void TryAddWebConfigSecrets(WebApplicationBuilder builder)
+        {
+            try
+            {
+                var webConfigPath = System.IO.Path.Combine(builder.Environment.ContentRootPath, "web.config");
+                if (!System.IO.File.Exists(webConfigPath))
+                {
+                    builder.Logging.AddFilter("Microsoft", LogLevel.Warning);
+                    return;
+                }
+
+                var doc = XDocument.Load(webConfigPath);
+                var secrets = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase);
+
+                // <appSettings><add key="GOOGLE_CLIENT_ID" value="..."/></appSettings>
+                foreach (var add in doc.Descendants("appSettings").Descendants("add"))
+                {
+                    var key = add.Attribute("key")?.Value?.Trim();
+                    var value = add.Attribute("value")?.Value;
+                    if (!string.IsNullOrWhiteSpace(key))
+                    {
+                        secrets[key] = value;
+                    }
+                }
+
+                // <aspNetCore><environmentVariables><environmentVariable name="GOOGLE_CLIENT_ID" value="..."/></environmentVariables>
+                foreach (var envVar in doc.Descendants("environmentVariables").Descendants("environmentVariable"))
+                {
+                    var name = envVar.Attribute("name")?.Value?.Trim();
+                    var value = envVar.Attribute("value")?.Value;
+                    if (!string.IsNullOrWhiteSpace(name))
+                    {
+                        secrets[name] = value;
+                    }
+                }
+
+                // Normalize into the keys we support (both env-style and Google:* style)
+                string? Get(string k) => secrets.TryGetValue(k, out var v) ? v : null;
+
+                var clientId = Get("GOOGLE_CLIENT_ID") ?? Get("Google__ClientId") ?? Get("Google:ClientId");
+                var clientSecret = Get("GOOGLE_CLIENT_SECRET") ?? Get("Google__ClientSecret") ?? Get("Google:ClientSecret");
+                var redirectUri = Get("GOOGLE_REDIRECT_URI") ?? Get("Google__RedirectUri") ?? Get("Google:RedirectUri");
+
+                var injected = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["GOOGLE_CLIENT_ID"] = clientId,
+                    ["GOOGLE_CLIENT_SECRET"] = clientSecret,
+                    ["GOOGLE_REDIRECT_URI"] = redirectUri,
+                    ["Google:ClientId"] = clientId,
+                    ["Google:ClientSecret"] = clientSecret,
+                    ["Google:RedirectUri"] = redirectUri
+                };
+
+                builder.Configuration.AddInMemoryCollection(injected!);
+            }
+            catch
+            {
+                // Never block startup due to diagnostics.
+            }
         }
     }
 }
