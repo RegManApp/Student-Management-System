@@ -16,6 +16,7 @@ using RegMan.Backend.BusinessLayer.DTOs.Integrations;
 using RegMan.Backend.DAL.Contracts;
 using RegMan.Backend.DAL.Entities;
 using RegMan.Backend.DAL.Entities.Integrations;
+using System.Threading;
 
 namespace RegMan.Backend.BusinessLayer.Services
 {
@@ -35,6 +36,8 @@ namespace RegMan.Backend.BusinessLayer.Services
         private readonly string redirectUri;
         private readonly bool isConfigured;
         private readonly string? configurationError;
+
+        private static int hasLoggedConfiguration;
 
         private DbContext Db => unitOfWork.Context;
 
@@ -56,27 +59,65 @@ namespace RegMan.Backend.BusinessLayer.Services
             // Resolution order (MANDATORY):
             //   1) Environment Variables (via IConfiguration)
             //   2) Google:ClientId / Google:ClientSecret / Google:RedirectUri
-            clientId = ReadSetting(configuration, envKey: "GOOGLE_CLIENT_ID", configKey: "Google:ClientId");
-            clientSecret = ReadSetting(configuration, envKey: "GOOGLE_CLIENT_SECRET", configKey: "Google:ClientSecret");
-            redirectUri = ReadSetting(configuration, envKey: "GOOGLE_REDIRECT_URI", configKey: "Google:RedirectUri");
+            var (resolvedClientId, clientIdSource) = ResolveSecret(
+                configuration,
+                settingName: "ClientId",
+                envKeys: new[] { "GOOGLE_CLIENT_ID", "Google__ClientId" },
+                configKeys: new[] { "Google:ClientId" }
+            );
+
+            var (resolvedClientSecret, clientSecretSource) = ResolveSecret(
+                configuration,
+                settingName: "ClientSecret",
+                envKeys: new[] { "GOOGLE_CLIENT_SECRET", "Google__ClientSecret" },
+                configKeys: new[] { "Google:ClientSecret" }
+            );
+
+            var (resolvedRedirectUri, redirectUriSource) = ResolveSecret(
+                configuration,
+                settingName: "RedirectUri",
+                envKeys: new[] { "GOOGLE_REDIRECT_URI", "Google__RedirectUri" },
+                configKeys: new[] { "Google:RedirectUri" }
+            );
+
+            clientId = resolvedClientId;
+            clientSecret = resolvedClientSecret;
+            redirectUri = resolvedRedirectUri;
 
             var missing = new List<string>(capacity: 3);
             if (string.IsNullOrWhiteSpace(clientId))
-                missing.Add("GOOGLE_CLIENT_ID or Google:ClientId");
+                missing.Add("GOOGLE_CLIENT_ID");
             if (string.IsNullOrWhiteSpace(clientSecret))
-                missing.Add("GOOGLE_CLIENT_SECRET or Google:ClientSecret");
+                missing.Add("GOOGLE_CLIENT_SECRET");
             if (string.IsNullOrWhiteSpace(redirectUri))
-                missing.Add("GOOGLE_REDIRECT_URI or Google:RedirectUri");
+                missing.Add("GOOGLE_REDIRECT_URI");
 
             isConfigured = missing.Count == 0;
             configurationError = isConfigured
                 ? null
-                : "Google OAuth is not configured. Missing: " + string.Join(", ", missing) +
-                  ". Configure via environment variables OR appsettings.Production.json under the Google section.";
+                : "Google Calendar OAuth misconfigured: " + string.Join(", ", missing) + " is missing. " +
+                  "Supported keys: GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET/GOOGLE_REDIRECT_URI (env) or Google:ClientId/Google:ClientSecret/Google:RedirectUri (config / appsettings / web.config).";
 
-            if (!isConfigured)
+            // Log once per process to help diagnose hosting config issues (MonsterASP).
+            if (Interlocked.Exchange(ref hasLoggedConfiguration, 1) == 0)
             {
-                logger.LogWarning(configurationError);
+                logger.LogInformation(
+                    "Google OAuth config snapshot: ClientId={ClientIdPresent} (Source={ClientIdSource}, Len={ClientIdLen}), ClientSecret={ClientSecretPresent} (Source={ClientSecretSource}, Len={ClientSecretLen}), RedirectUri={RedirectUriPresent} (Source={RedirectUriSource}, Value={RedirectUriValue})",
+                    !string.IsNullOrWhiteSpace(clientId),
+                    clientIdSource,
+                    clientId?.Length ?? 0,
+                    !string.IsNullOrWhiteSpace(clientSecret),
+                    clientSecretSource,
+                    clientSecret?.Length ?? 0,
+                    !string.IsNullOrWhiteSpace(redirectUri),
+                    redirectUriSource,
+                    string.IsNullOrWhiteSpace(redirectUri) ? "<missing>" : redirectUri
+                );
+
+                if (!isConfigured)
+                {
+                    logger.LogError(configurationError);
+                }
             }
         }
 
@@ -84,6 +125,14 @@ namespace RegMan.Backend.BusinessLayer.Services
         {
             if (!isConfigured)
                 throw new InvalidOperationException(configurationError ?? "Google OAuth is not configured.");
+
+            if (!Uri.TryCreate(redirectUri, UriKind.Absolute, out _))
+            {
+                throw new InvalidOperationException(
+                    "Google Calendar OAuth misconfigured: GOOGLE_REDIRECT_URI is not a valid absolute URL. " +
+                    "Make sure it exactly matches the Google Cloud Console redirect URI."
+                );
+            }
 
             var state = ProtectState(new GoogleCalendarOAuthState(
                 UserId: userId,
@@ -106,18 +155,40 @@ namespace RegMan.Backend.BusinessLayer.Services
             return request.Build().ToString();
         }
 
-        private static string ReadSetting(IConfiguration configuration, string envKey, string configKey)
+        private static (string Value, string Source) ResolveSecret(
+            IConfiguration configuration,
+            string settingName,
+            IReadOnlyList<string> envKeys,
+            IReadOnlyList<string> configKeys)
         {
-            // IMPORTANT: treat empty/whitespace as missing and allow fallback.
-            var envValue = configuration[envKey];
-            if (!string.IsNullOrWhiteSpace(envValue))
-                return envValue;
+            // 1) Environment.GetEnvironmentVariable (direct OS env vars)
+            foreach (var key in envKeys)
+            {
+                var raw = Environment.GetEnvironmentVariable(key);
+                var trimmed = raw?.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmed))
+                    return (trimmed, $"Environment:{key}");
+            }
 
-            var configValue = configuration[configKey];
-            if (!string.IsNullOrWhiteSpace(configValue))
-                return configValue;
+            // 2) IConfiguration direct lookup (covers appsettings, web.config providers, and env var providers)
+            foreach (var key in envKeys)
+            {
+                var raw = configuration[key];
+                var trimmed = raw?.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmed))
+                    return (trimmed, $"Configuration:{key}");
+            }
 
-            return string.Empty;
+            // 3) IConfiguration hierarchical keys (e.g., Google:ClientId; also supports env var mapping Google__ClientId)
+            foreach (var key in configKeys)
+            {
+                var raw = configuration[key];
+                var trimmed = raw?.Trim();
+                if (!string.IsNullOrWhiteSpace(trimmed))
+                    return (trimmed, $"Configuration:{key}");
+            }
+
+            return (string.Empty, $"Missing:{settingName}");
         }
 
         public GoogleCalendarOAuthState UnprotectState(string protectedState)

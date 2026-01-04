@@ -280,6 +280,34 @@ namespace RegMan.Backend.API
             app.MapHub<NotificationHub>("/hubs/notifications");
             app.MapControllers();
 
+            // ==================
+            // Startup diagnostics (MonsterASP)
+            // ==================
+            // Do NOT log secret values. Log presence and redirect URI only.
+            var cfg = app.Configuration;
+
+            string? Env(string k) => Environment.GetEnvironmentVariable(k);
+            bool Has(string? v) => !string.IsNullOrWhiteSpace(v);
+
+            var clientIdEnv = Env("GOOGLE_CLIENT_ID") ?? Env("Google__ClientId");
+            var clientSecretEnv = Env("GOOGLE_CLIENT_SECRET") ?? Env("Google__ClientSecret");
+            var redirectEnv = Env("GOOGLE_REDIRECT_URI") ?? Env("Google__RedirectUri");
+
+            var clientIdCfg = cfg["GOOGLE_CLIENT_ID"] ?? cfg["Google:ClientId"];
+            var clientSecretCfg = cfg["GOOGLE_CLIENT_SECRET"] ?? cfg["Google:ClientSecret"];
+            var redirectCfg = cfg["GOOGLE_REDIRECT_URI"] ?? cfg["Google:RedirectUri"];
+
+            app.Logger.LogInformation(
+                "Startup Google OAuth config presence: ClientId Env={ClientIdEnv} Cfg={ClientIdCfg}; ClientSecret Env={ClientSecretEnv} Cfg={ClientSecretCfg}; RedirectUri Env={RedirectEnv} Cfg={RedirectCfg}; EffectiveRedirectUri={EffectiveRedirectUri}",
+                Has(clientIdEnv),
+                Has(clientIdCfg),
+                Has(clientSecretEnv),
+                Has(clientSecretCfg),
+                Has(redirectEnv),
+                Has(redirectCfg),
+                (redirectCfg ?? redirectEnv)?.Trim() ?? "<missing>"
+            );
+
             app.Run();
         }
     }

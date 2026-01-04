@@ -11,10 +11,14 @@ namespace RegMan.Backend.API.Controllers
     public class GoogleCalendarIntegrationController : ControllerBase
     {
         private readonly IGoogleCalendarIntegrationService googleCalendarIntegrationService;
+        private readonly ILogger<GoogleCalendarIntegrationController> logger;
 
-        public GoogleCalendarIntegrationController(IGoogleCalendarIntegrationService googleCalendarIntegrationService)
+        public GoogleCalendarIntegrationController(
+            IGoogleCalendarIntegrationService googleCalendarIntegrationService,
+            ILogger<GoogleCalendarIntegrationController> logger)
         {
             this.googleCalendarIntegrationService = googleCalendarIntegrationService;
+            this.logger = logger;
         }
 
         /// <summary>
@@ -37,6 +41,8 @@ namespace RegMan.Backend.API.Controllers
                 safeReturnUrl = returnUrl;
             }
 
+            logger.LogInformation("GoogleCalendar connect-url requested for UserId={UserId} ReturnUrl={ReturnUrl}", userId, safeReturnUrl);
+
             try
             {
                 var url = googleCalendarIntegrationService.CreateAuthorizationUrl(userId, safeReturnUrl);
@@ -44,9 +50,16 @@ namespace RegMan.Backend.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
-                // Return a clear configuration error instead of a generic 500.
+                // Configuration/validation errors.
+                logger.LogError(ex, "GoogleCalendar connect-url failed (likely misconfiguration) for UserId={UserId}", userId);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse<string>.FailureResponse(ex.Message, StatusCodes.Status500InternalServerError));
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "GoogleCalendar connect-url failed unexpectedly for UserId={UserId}", userId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse("Google Calendar connect-url failed. See server logs for details.", StatusCodes.Status500InternalServerError));
             }
         }
 
@@ -77,8 +90,15 @@ namespace RegMan.Backend.API.Controllers
             }
             catch (InvalidOperationException ex)
             {
+                logger.LogError(ex, "GoogleCalendar connect failed (likely misconfiguration) for UserId={UserId}", userId);
                 return StatusCode(StatusCodes.Status500InternalServerError,
                     ApiResponse<string>.FailureResponse(ex.Message, StatusCodes.Status500InternalServerError));
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "GoogleCalendar connect failed unexpectedly for UserId={UserId}", userId);
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                    ApiResponse<string>.FailureResponse("Google Calendar connect failed. See server logs for details.", StatusCodes.Status500InternalServerError));
             }
         }
 
@@ -113,6 +133,7 @@ namespace RegMan.Backend.API.Controllers
         {
             if (!string.IsNullOrWhiteSpace(error))
             {
+                logger.LogWarning("GoogleCalendar OAuth callback returned error={Error}", error);
                 return Content($"Google Calendar connection failed: {error}", "text/plain");
             }
 
@@ -128,6 +149,7 @@ namespace RegMan.Backend.API.Controllers
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "GoogleCalendar OAuth callback failed");
                 return Content($"Google Calendar connection failed: {ex.Message}", "text/plain");
             }
 

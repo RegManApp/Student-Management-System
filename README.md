@@ -79,6 +79,11 @@ Integration endpoints:
 - Use `GET /api/integrations/google-calendar/connect-url` with JWT auth; the frontend then navigates to the returned URL.
 - `GET /api/integrations/google-calendar/connect` is legacy and JWT-protected; a plain browser navigation will not include the JWT header and will return 401.
 
+MonsterASP configuration tips:
+
+- If your host supports `web.config` appSettings, you can set either flat keys (`GOOGLE_CLIENT_ID`) or hierarchical keys using the double-underscore form (`Google__ClientId`, `Google__ClientSecret`, `Google__RedirectUri`).
+- Restart the application after changing secrets; some hosts only apply changes on recycle.
+
 ## Database & Migrations
 
 - EF Core migrations are stored under `RegMan.Backend.DAL/Migrations/`.
